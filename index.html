@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eFootball Tournament Manager</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Background -->
+    <div class="background">
+        <div class="stars"></div>
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
+
+    <!-- Login/Registration Page -->
+    <div id="loginPage" class="page active">
+        <div class="glass-container">
+            <div class="logo-container">
+                <div class="logo-icon">
+                    <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+                        <circle cx="32" cy="32" r="30" fill="url(#grad1)" stroke="#00ff88" stroke-width="2"/>
+                        <path d="M32 12 L32 52 M12 32 L52 32" stroke="#000" stroke-width="2"/>
+                        <circle cx="32" cy="32" r="8" fill="#000"/>
+                        <defs>
+                            <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#00ff88;stop-opacity:0.3" />
+                                <stop offset="100%" style="stop-color:#00cc6a;stop-opacity:0.6" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <h1 class="logo-text">eFootball</h1>
+                <p class="logo-subtitle">Tournament Manager</p>
+            </div>
+            
+            <!-- Toggle Between Login and Register -->
+            <div class="tab-buttons">
+                <button class="tab-btn active" onclick="showTab('login')">
+                    <svg class="tab-icon-svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M10 11a4 4 0 100-8 4 4 0 000 8zM3 18a7 7 0 1114 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <span>Login</span>
+                </button>
+                <button class="tab-btn" onclick="showTab('register')">
+                    <svg class="tab-icon-svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M10 4v12m-6-6h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    <span>Register</span>
+                </button>
+                <button class="tab-btn" onclick="showTab('admin')">
+                    <svg class="tab-icon-svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M10 2l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6l2-6z" fill="currentColor"/>
+                    </svg>
+                    <span>Admin</span>
+                </button>
+            </div>
+
+            <!-- Player Login Form -->
+            <div id="loginForm" class="form-content active">
+                <h2>Welcome Back</h2>
+                <div class="input-group">
+                    <svg class="input-icon-svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M10 11a4 4 0 100-8 4 4 0 000 8zM3 18a7 7 0 1114 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <input type="text" id="loginName" placeholder="Player Name" class="input-field">
+                </div>
+                <div class="input-group">
+                    <svg class="input-icon-svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <rect x="4" y="9" width="12" height="9" rx="2" stroke="currentColor" stroke-width="2"/>
+                        <path d="M7 9V6a3 3 0 116 0v3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <input type="password" id="loginPassword" placeholder="Password" class="input-field">
+                </div>
+                <button onclick="playerLogin()" class="btn-primary">
+                    <span>Login</span>
+                    <span class="btn-arrow">→</span>
+                </button>
+                <p class="error-msg" id="loginError"></p>
+            </div>
+
+            <!-- Player Registration Form -->
+            <div id="registerForm" class="form-content">
+                <h2>Create Account</h2>
+                <div class="input-group">
+                    <svg class="input-icon-svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M10 11a4 4 0 100-8 4 4 0 000 8zM3 18a7 7 0 1114 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <input type="text" id="regName" placeholder="Full Name" class="input-field">
+                </div>
+                <div class="input-group">
+                    <svg class="input-icon-svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <rect x="4" y="9" width="12" height="9" rx="2" stroke="currentColor" stroke-width="2"/>
+                        <path d="M7 9V6a3 3 0 116 0v3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <input type="password" id="regPassword" placeholder="Password (min 4 characters)" class="input-field">
+                </div>
+                <div class="input-group">
+                    <svg class="input-icon-svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M16 6L8.5 13.5L4 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <input type="password" id="regConfirmPassword" placeholder="Confirm Password" class="input-field">
+                </div>
+                
+                <label class="input-label">
+                    <svg class="label-icon-svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="2"/>
+                        <path d="M10 4v12m-6-6h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Choose Your Club (Each club is unique!)
+                </label>
+                
+                <!-- Club Selection Grid -->
+                <div id="clubGrid" class="club-grid"></div>
+                
+                <!-- Selected Club Preview -->
+                <div id="selectedClubPreview" class="selected-club-preview" style="display:none;">
+                    <div class="preview-badge">
+                        <img id="previewClubLogo" src="" alt="Club Logo" class="preview-logo">
+                        <div class="preview-info">
+                            <p class="preview-label">Selected Club</p>
+                            <p id="previewClubName" class="preview-name"></p>
+                        </div>
+                        <button onclick="clearClubSelection()" class="btn-clear">✕</button>
+                    </div>
+                </div>
+                
+                <button onclick="playerRegister()" class="btn-primary" id="registerBtn">
+                    <span>Create Account</span>
+                    <span class="btn-arrow">→</span>
+                </button>
+                <p class="error-msg" id="regError"></p>
+            </div>
+
+            <!-- Admin Login Form -->
+            <div id="adminForm" class="form-content">
+                <h2>Admin Access</h2>
+                <p class="info-msg">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="vertical-align: middle;">
+                        <rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/>
+                        <path d="M6 7V5a2 2 0 114 0v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Secure Admin Panel
+                </p>
+                <div class="input-group">
+                    <svg class="input-icon-svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M14 7V5a4 4 0 00-8 0v2M6 18h8a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <input type="password" id="adminPassword" placeholder="Admin Password" class="input-field">
+                </div>
+                <button onclick="adminLogin()" class="btn-primary btn-admin">
+                    <span>Enter Admin Panel</span>
+                    <span class="btn-arrow">→</span>
+                </button>
+                <p class="error-msg" id="adminError"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Player Dashboard -->
+    <div id="playerDashboard" class="page">
+        <nav class="navbar glass-nav">
+            <div class="nav-brand">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                    <path d="M12 2v20M2 12h20" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
+                <span class="nav-title">eFootball</span>
+            </div>
+            <div class="nav-actions">
+                <button onclick="showPlayerSection('profile')" class="nav-btn active" id="navProfile">
+                    <svg class="nav-btn-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M10 11a4 4 0 100-8 4 4 0 000 8zM3 18a7 7 0 1114 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <span>Profile</span>
+                </button>
+                <button onclick="showPlayerSection('stats')" class="nav-btn" id="navStats">
+                    <svg class="nav-btn-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M4 16V10m4 6V6m4 10V8m4 8V4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <span>Stats</span>
+                </button>
+                <button onclick="showPlayerSection('tournaments')" class="nav-btn" id="navTournaments">
+                    <svg class="nav-btn-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M10 2l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6l2-6z" fill="currentColor"/>
+                    </svg>
+                    <span>Tournaments</span>
+                </button>
+                <button onclick="logout()" class="btn-logout">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M6 14H3a1 1 0 01-1-1V3a1 1 0 011-1h3m5 4l3 3m0 0l-3 3m3-3H6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Tournament Notification Banner -->
+        <div class="tournament-banner" id="tournamentBanner" style="display:none;">
+            <div class="banner-content">
+                <span class="banner-icon">🎮</span>
+                <div class="banner-text">
+                    <h3>New Tournament Available!</h3>
+                    <p id="bannerInfo"></p>
+                </div>
+                <button onclick="registerForTournament()" class="btn-banner" id="bannerRegisterBtn">
+                    Register Now
+                </button>
+            </div>
+        </div>
+
+        <div class="dashboard-wrapper">
+            <!-- Profile Section -->
+            <div id="profileSection" class="dashboard-section active">
+                <div class="profile-header glass-card">
+                    <div class="profile-bg"></div>
+                    <img id="playerProfileLogo" src="" alt="Club Logo" class="profile-club-logo">
+                    <div class="profile-info">
+                        <h1 id="playerProfileName" class="profile-name"></h1>
+                        <p id="playerProfileClub" class="profile-club"></p>
+                    </div>
+                    <div class="profile-stats-quick">
+                        <div class="quick-stat">
+                            <span class="quick-stat-value" id="profileTournaments">0</span>
+                            <span class="quick-stat-label">Tournaments</span>
+                        </div>
+                        <div class="quick-stat">
+                            <span class="quick-stat-value" id="profileWins">0</span>
+                            <span class="quick-stat-label">Wins</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-grid-modern">
+                    <div class="stat-card-modern glass-card">
+                        <div class="stat-icon-modern">⚽</div>
+                        <div class="stat-data-modern">
+                            <p class="stat-label-modern">Matches Played</p>
+                            <h3 class="stat-value-modern" id="matchesPlayed">0</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card-modern glass-card">
+                        <div class="stat-icon-modern">🎯</div>
+                        <div class="stat-data-modern">
+                            <p class="stat-label-modern">Goals Scored</p>
+                            <h3 class="stat-value-modern" id="goalsScored">0</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card-modern glass-card">
+                        <div class="stat-icon-modern">🏅</div>
+                        <div class="stat-data-modern">
+                            <p class="stat-label-modern">Finals Reached</p>
+                            <h3 class="stat-value-modern" id="finalsReached">0</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card-modern glass-card">
+                        <div class="stat-icon-modern trophy">🏆</div>
+                        <div class="stat-data-modern">
+                            <p class="stat-label-modern">Championships</p>
+                            <h3 class="stat-value-modern" id="championships">0</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats/Leaderboard Section -->
+            <div id="statsSection" class="dashboard-section">
+                <div class="section-header">
+                    <h2>🏅 Global Leaderboard</h2>
+                    <p class="section-subtitle">Top performers across all tournaments</p>
+                </div>
+
+                <div class="leaderboard-container glass-card">
+                    <div class="leaderboard-tabs">
+                        <button class="leaderboard-tab active" onclick="loadLeaderboards('wins')">
+                            🏆 Most Wins
+                        </button>
+                        <button class="leaderboard-tab" onclick="loadLeaderboards('goals')">
+                            ⚽ Top Scorers
+                        </button>
+                        <button class="leaderboard-tab" onclick="loadLeaderboards('titles')">
+                            👑 Champions
+                        </button>
+                    </div>
+                    <div id="leaderboardContent" class="leaderboard-content"></div>
+                </div>
+            </div>
+
+            <!-- Tournaments Section -->
+            <div id="tournamentsSection" class="dashboard-section">
+                <div class="section-header">
+                    <h2>🏆 Tournament History</h2>
+                    <p class="section-subtitle">All your tournament participations</p>
+                </div>
+
+                <div id="tournamentsList" class="tournaments-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="adminDashboard" class="page">
+        <nav class="navbar glass-nav admin-nav">
+            <div class="nav-brand">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6l2-6z" fill="currentColor"/>
+                </svg>
+                <span class="nav-title">Admin Panel</span>
+            </div>
+            <div class="nav-actions">
+                <button onclick="logout()" class="btn-logout">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M6 14H3a1 1 0 01-1-1V3a1 1 0 011-1h3m5 4l3 3m0 0l-3 3m3-3H6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+        </nav>
+
+        <div class="admin-wrapper">
+            <!-- Quick Stats -->
+            <div class="admin-stats-row">
+                <div class="admin-stat-card glass-card">
+                    <div class="admin-stat-icon">🏆</div>
+                    <div class="admin-stat-info">
+                        <p class="admin-stat-label">Total Tournaments</p>
+                        <h3 class="admin-stat-value" id="adminTotalTournaments">0</h3>
+                    </div>
+                </div>
+                <div class="admin-stat-card glass-card">
+                    <div class="admin-stat-icon">👥</div>
+                    <div class="admin-stat-info">
+                        <p class="admin-stat-label">Registered Players</p>
+                        <h3 class="admin-stat-value" id="adminTotalPlayers">0</h3>
+                    </div>
+                </div>
+                <div class="admin-stat-card glass-card">
+                    <div class="admin-stat-icon">⚽</div>
+                    <div class="admin-stat-info">
+                        <p class="admin-stat-label">Matches Played</p>
+                        <h3 class="admin-stat-value" id="adminTotalMatches">0</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Player Management Section -->
+            <div id="playerManagement"></div>
+
+            <!-- Tournament Creator -->
+            <div class="glass-card admin-section">
+                <div class="section-header-admin">
+                    <h3>🎮 Create New Tournament</h3>
+                </div>
+                <div class="tournament-creator">
+                    <div class="creator-options">
+                        <div class="creator-option">
+                            <label class="creator-label">Number of Players</label>
+                            <select id="tournamentSize" class="creator-select">
+                                <option value="4">4 Players</option>
+                                <option value="8">8 Players</option>
+                                <option value="16">16 Players</option>
+                            </select>
+                        </div>
+                        <div class="creator-option">
+                            <label class="creator-label">Tournament Type</label>
+                            <select id="tournamentType" class="creator-select">
+                                <option value="single">Single Elimination</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button onclick="createTournament()" class="btn-primary btn-create">
+                        <span>🚀 Launch Tournament</span>
+                    </button>
+                    <p class="error-msg" id="tournamentError"></p>
+                </div>
+            </div>
+
+            <!-- Active Tournament Panel -->
+            <div class="glass-card admin-section" id="activeTournamentPanel" style="display:none;">
+                <div class="section-header-admin">
+                    <h3>🏆 Active Tournament</h3>
+                    <div id="tournamentStatusBadge"></div>
+                </div>
+                
+                <div id="tournamentControls">
+                    <p id="registrationStatus" class="registration-info"></p>
+                    <div class="tournament-actions">
+                        <button onclick="startTournament()" class="btn-success btn-large" id="startTournamentBtn">
+                            ▶ Start Tournament
+                        </button>
+                        <button onclick="deleteTournament()" class="btn-danger btn-large">
+                            🗑 Delete Tournament
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="matchManagement" style="display:none;">
+                    <h4 class="matches-title">⚽ Match Management</h4>
+                    <div id="matchesList"></div>
+                </div>
+
+                <div id="adminBracket" class="bracket-view"></div>
+            </div>
+
+            <!-- Leaderboards -->
+            <div class="glass-card admin-section">
+                <div class="section-header-admin">
+                    <h3>🏅 Global Leaderboards</h3>
+                </div>
+                <div id="adminLeaderboards"></div>
+            </div>
+
+            <!-- Tournament History -->
+            <div class="glass-card admin-section">
+                <div class="section-header-admin">
+                    <h3>📜 Tournament History</h3>
+                </div>
+                <div id="adminHistory"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tournament Detail Modal -->
+    <div id="tournamentModal" class="modal">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h3 id="modalTitle"></h3>
+                <button onclick="closeModal()" class="modal-close">✕</button>
+            </div>
+            <div id="modalBody" class="modal-body"></div>
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
