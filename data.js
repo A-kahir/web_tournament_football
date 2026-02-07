@@ -284,15 +284,9 @@ const CLUBS = [
         id: 57, 
         name: "Inter Miami", 
         logo: "https://assets.football-logos.cc/logos/usa/700x700/inter-miami-cf.aeb3f125.png"
-    },
-    { 
-        id: 58, 
-        name: "AS FAR", 
-        logo: "https://assets.football-logos.cc/logos/morocco/700x700/as-far.9e21c90d.png"
     }
 ];
 
-// Admin Password - CHANGE THIS!
 const ADMIN_PASSWORD = "Adminfootball22";
 
 // Initialize localStorage structure
