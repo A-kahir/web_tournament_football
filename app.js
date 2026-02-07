@@ -1,7 +1,7 @@
 // Global State
 let currentPage = 'login';
 let selectedClubId = null;
-let currentLeaderboard = 'wins';
+let currentLeaderboard = 'championships';
 
 // Toast Notification System
 function showToast(message, type = 'success') {
@@ -125,7 +125,6 @@ function playerRegister() {
     
     errorMsg.textContent = '';
     
-    // Validation
     if (!name) {
         errorMsg.textContent = 'Please enter your full name';
         return;
@@ -156,24 +155,20 @@ function playerRegister() {
         return;
     }
     
-    // Check if name already exists
     const players = getPlayers();
     if (players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
         errorMsg.textContent = 'This name is already taken';
         return;
     }
     
-    // Check if club is taken
     if (isClubTaken(selectedClubId)) {
         errorMsg.textContent = 'This club was just taken, please select another';
         populateClubGrid();
         return;
     }
     
-    // Get club info
     const club = getClubById(selectedClubId);
     
-    // Create player
     const newPlayer = {
         id: generateId(),
         name: name,
@@ -195,15 +190,12 @@ function playerRegister() {
     players.push(newPlayer);
     savePlayers(players);
     
-    // Auto login
     const user = { ...newPlayer };
     delete user.password;
     saveCurrentUser(user);
     
-    // Clear form
     selectedClubId = null;
     
-    // Show toast and dashboard
     showToast(`Welcome ${name}! Your account has been created.`);
     showPlayerDashboard();
 }
@@ -234,7 +226,6 @@ function playerLogin() {
         return;
     }
     
-    // Login successful
     const user = { ...player };
     delete user.password;
     saveCurrentUser(user);
@@ -260,33 +251,20 @@ function adminLogin() {
         return;
     }
     
-    // Check password
     if (password !== ADMIN_PASSWORD) {
         errorMsg.textContent = 'Incorrect admin password';
         return;
     }
     
-    // Check if admin already exists
-    if (!adminExists()) {
-        // First time admin setup
-        const adminUser = {
-            id: 'admin',
-            name: 'Administrator',
-            isAdmin: true,
-            createdAt: new Date().toISOString()
-        };
-        
-        setAdminExists(true);
-        saveCurrentUser(adminUser);
-    } else {
-        // Admin already exists
-        const adminUser = {
-            id: 'admin',
-            name: 'Administrator',
-            isAdmin: true
-        };
-        saveCurrentUser(adminUser);
-    }
+    const adminUser = {
+        id: 'admin',
+        name: 'Administrator',
+        isAdmin: true,
+        createdAt: new Date().toISOString()
+    };
+    
+    setAdminExists(true);
+    saveCurrentUser(adminUser);
     
     showToast('Admin access granted', 'success');
     showAdminDashboard();
@@ -318,7 +296,7 @@ function showPlayerSection(section) {
     document.getElementById(`nav${section.charAt(0).toUpperCase() + section.slice(1)}`).classList.add('active');
     
     if (section === 'stats') {
-        loadLeaderboards('wins');
+        loadLeaderboards();
     } else if (section === 'tournaments') {
         loadPlayerTournaments();
     }
@@ -329,14 +307,15 @@ function showPlayerDashboard() {
     const user = getCurrentUser();
     if (!user) return;
     
-    // Update profile
     const players = getPlayers();
     const currentPlayer = players.find(p => p.id === user.id);
     
     if (currentPlayer) {
         document.getElementById('playerProfileName').textContent = currentPlayer.name;
         document.getElementById('playerProfileClub').textContent = currentPlayer.clubName;
-        document.getElementById('playerProfileLogo').src = currentPlayer.clubLogo;
+        const profileLogo = document.getElementById('playerProfileLogo');
+        profileLogo.src = currentPlayer.clubLogo;
+        profileLogo.onerror = () => profileLogo.style.display = 'none';
         
         document.getElementById('profileTournaments').textContent = currentPlayer.tournaments || 0;
         document.getElementById('profileWins').textContent = currentPlayer.championships || 0;
@@ -352,7 +331,10 @@ function showPlayerDashboard() {
     showPlayerSection('profile');
 }
 
-// Check Active Tournament
+// ───────────────────────────────────────────────
+// TOURNAMENT RELATED FUNCTIONS
+// ───────────────────────────────────────────────
+
 function checkActiveTournament() {
     const tournament = getActiveTournament();
     const banner = document.getElementById('tournamentBanner');
@@ -368,21 +350,23 @@ function checkActiveTournament() {
     if (tournament.status === 'registration') {
         const isRegistered = tournament.players.some(p => p.id === user.id);
         
+        banner.style.display = 'block';
+        bannerInfo.textContent = isRegistered 
+            ? `You're registered! ${tournament.players.length}/${tournament.maxPlayers} players total`
+            : `${tournament.players.length}/${tournament.maxPlayers} players registered - New Tournament Available!`;
+        bannerBtn.innerHTML = isRegistered ? '✕ Unregister' : 'Register Now';
+        bannerBtn.onclick = isRegistered ? unregisterFromTournament : registerForTournament;
+        bannerBtn.className = isRegistered ? 'btn-banner btn-unregister' : 'btn-banner';
+        bannerBtn.style.display = 'block';
+        
         if (!isRegistered) {
-            banner.style.display = 'block';
-            bannerInfo.textContent = `${tournament.players.length}/${tournament.maxPlayers} players registered`;
-            bannerBtn.style.display = 'block';
-        } else {
-            banner.style.display = 'block';
-            bannerInfo.textContent = `You're registered! ${tournament.players.length}/${tournament.maxPlayers} players total`;
-            bannerBtn.style.display = 'none';
+            showToast('New tournament available! Register now.', 'info');
         }
     } else {
         banner.style.display = 'none';
     }
 }
 
-// Register for Tournament
 function registerForTournament() {
     const tournament = getActiveTournament();
     const user = getCurrentUser();
@@ -407,62 +391,82 @@ function registerForTournament() {
         clubLogo: player.clubLogo
     });
     
+    player.tournaments = (player.tournaments || 0) + 1;
+    savePlayers(players);
+    
     saveActiveTournament(tournament);
     checkActiveTournament();
     showToast('Successfully registered for tournament!');
 }
 
-// Load Leaderboards
-function loadLeaderboards(type) {
-    currentLeaderboard = type;
-    const players = getPlayers();
-    const content = document.getElementById('leaderboardContent');
+function unregisterFromTournament() {
+    if (!confirm('Are you sure you want to unregister?')) return;
     
-    // Remove active from all tabs
-    document.querySelectorAll('.leaderboard-tab').forEach(tab => {
-        tab.classList.remove('active');
-    });
+    const tournament = getActiveTournament();
+    const user = getCurrentUser();
     
-    // Add active to current tab
-    event?.target?.classList.add('active');
+    if (!tournament || !user) return;
     
-    let sortedPlayers = [...players];
-    
-    if (type === 'wins') {
-        sortedPlayers.sort((a, b) => (b.wins || 0) - (a.wins || 0));
-    } else if (type === 'goals') {
-        sortedPlayers.sort((a, b) => (b.goals || 0) - (a.goals || 0));
-    } else if (type === 'titles') {
-        sortedPlayers.sort((a, b) => (b.championships || 0) - (a.championships || 0));
+    if (tournament.status !== 'registration') {
+        showToast('Cannot unregister after start', 'error');
+        return;
     }
     
-    content.innerHTML = `
-        <table class="stats-table">
+    tournament.players = tournament.players.filter(p => p.id !== user.id);
+    
+    const players = getPlayers();
+    const player = players.find(p => p.id === user.id);
+    if (player) {
+        player.tournaments = Math.max(0, (player.tournaments || 0) - 1);
+        savePlayers(players);
+    }
+    
+    saveActiveTournament(tournament);
+    checkActiveTournament();
+    showToast('Unregistered successfully');
+}
+
+// ───────────────────────────────────────────────
+// LEADERBOARDS & PLAYER TOURNAMENTS
+// ───────────────────────────────────────────────
+
+function loadLeaderboards() {
+    const container = document.getElementById('leaderboardContent');
+    const players = getPlayers().filter(p => !p.isAdmin);
+    
+    const sortedPlayers = [...players].sort((a, b) => {
+        if ((b.championships || 0) !== (a.championships || 0)) {
+            return (b.championships || 0) - (a.championships || 0);
+        } else if ((b.finalsReached || 0) !== (a.finalsReached || 0)) {
+            return (b.finalsReached || 0) - (a.finalsReached || 0);
+        } else {
+            return (b.goals || 0) - (a.goals || 0);
+        }
+    });
+    
+    container.innerHTML = `
+        <table class="leaderboard-table">
             <thead>
                 <tr>
                     <th>Rank</th>
                     <th>Logo</th>
-                    <th>Club</th>
                     <th>Player</th>
-                    <th>Goals</th>
-                    <th>Finals</th>
+                    <th>Club</th>
                     <th>Championships</th>
+                    <th>Finals</th>
+                    <th>Total Goals</th>
                 </tr>
             </thead>
             <tbody>
-                ${sortedPlayers.map((player, index) => `
+                ${sortedPlayers.map((p, i) => `
                     <tr>
-                        <td class="rank-cell">
-                            ${index < 3 ? `<span class="medal medal-${index + 1}">${index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}</span>` : `<span class="rank-number">${index + 1}</span>`}
-                        </td>
-                        <td>
-                            <img src="${player.clubLogo}" alt="${player.clubName}" class="table-club-logo" onerror="this.style.display='none'">
-                        </td>
-                        <td class="club-name-cell">${player.clubName}</td>
-                        <td class="player-name-cell">${player.name}</td>
-                        <td>${player.goals || 0}</td>
-                        <td>${player.finalsReached || 0}</td>
-                        <td class="highlight-cell">${player.championships || 0}</td>
+                        <td>${i + 1}</td>
+                        <td><img src="${p.clubLogo}" class="table-club-logo" onerror="this.style.display='none'"></td>
+                        <td>${p.name}</td>
+                        <td>${p.clubName}</td>
+                        <td>${p.championships || 0}</td>
+                        <td>${p.finalsReached || 0}</td>
+                        <td>${p.goals || 0}</td>
                     </tr>
                 `).join('')}
             </tbody>
@@ -470,232 +474,236 @@ function loadLeaderboards(type) {
     `;
 }
 
-// Load Player Tournaments
 function loadPlayerTournaments() {
+    const container = document.getElementById('tournamentsList');
     const user = getCurrentUser();
     const tournaments = getTournaments();
-    const activeTournament = getActiveTournament();
-    const list = document.getElementById('tournamentsList');
+    const active = getActiveTournament();
     
-    // Combine completed tournaments with active tournament if player is in it
     let allTournaments = [...tournaments];
-    if (activeTournament && activeTournament.status === 'active' && 
-        activeTournament.players.some(p => p.id === user.id)) {
-        allTournaments.unshift(activeTournament);
+    if (active && active.players.some(p => p.id === user.id)) {
+        allTournaments.unshift(active);
     }
     
-    const playerTournaments = allTournaments.filter(t => 
-        t.players.some(p => p.id === user.id)
-    );
-    
-    if (playerTournaments.length === 0) {
-        list.innerHTML = '<p class="empty-state">No tournament history yet</p>';
+    if (allTournaments.length === 0) {
+        container.innerHTML = '<p class="empty-state">No tournaments yet</p>';
         return;
     }
     
-    list.innerHTML = playerTournaments.map(t => `
-        <div class="tournament-card glass-card" onclick="showPlayerTournamentDetails('${t.id}')">
-            <div class="tournament-card-header">
-                <h3>${t.status === 'completed' ? '🏆' : '🎮'} Tournament #${t.id.slice(0, 6)}</h3>
+    container.innerHTML = allTournaments.map(t => `
+        <div class="tournament-card glass-card ${t.status === 'completed' ? 'completed-tournament' : ''}" onclick="showPlayerTournamentDetails('${t.id}')">
+            <div class="tournament-header">
+                <h4>Tournament #${t.id.slice(0,6)}</h4>
                 <span class="tournament-date">${new Date(t.createdAt).toLocaleDateString()}</span>
             </div>
-            <div class="tournament-card-info">
+            <div class="tournament-info">
                 <p>Players: ${t.players.length}</p>
-                <p>Status: ${t.status === 'completed' ? 'Completed' : t.status === 'active' ? 'In Progress' : 'Registration'}</p>
-                ${t.winner ? `<p><strong>🏆 Winner: ${t.winner.name}</strong></p>` : ''}
+                ${t.status === 'completed' ? `<p class="winner">Champion: ${t.winner?.name || 'TBD'}</p>` : ''}
+                <p>Status: ${t.status === 'registration' ? 'Open' : t.status === 'active' ? 'In Progress' : 'Completed'}</p>
             </div>
         </div>
     `).join('');
 }
 
-// Show Admin Dashboard
+// ───────────────────────────────────────────────
+// ADMIN DASHBOARD & TOURNAMENT MANAGEMENT
+// ───────────────────────────────────────────────
+
 function showAdminDashboard() {
-    const players = getPlayers();
-    const tournaments = getTournaments();
-    const activeTournament = getActiveTournament();
-    
-    // Update stats
-    document.getElementById('adminTotalPlayers').textContent = players.length;
-    document.getElementById('adminTotalTournaments').textContent = tournaments.length;
-    
-    let totalMatches = 0;
-    tournaments.forEach(t => {
-        if (t.matches) {
-            totalMatches += t.matches.length;
-        }
-    });
-    document.getElementById('adminTotalMatches').textContent = totalMatches;
-    
-    // Show active tournament if exists
-    if (activeTournament) {
-        showActiveTournamentPanel(activeTournament);
-    } else {
-        document.getElementById('activeTournamentPanel').style.display = 'none';
-    }
-    
+    showPage('adminDashboard');
+    loadAdminCurrentTournamentSummary();
+    loadAdminStats();
+    loadPlayerManagement();
+    loadActiveTournament();
     loadAdminLeaderboards();
     loadAdminHistory();
-    loadPlayerManagement();
-    
-    showPage('adminDashboard');
 }
 
-// Load Player Management
-function loadPlayerManagement() {
-    const container = document.getElementById('playerManagement');
-    if (!container) return;
+function loadAdminCurrentTournamentSummary() {
+    const container = document.querySelector('.admin-wrapper'); // Assuming at top
+    const tournament = getActiveTournament();
+    
+    if (!tournament) return;
+    
+    const summaryDiv = document.createElement('div');
+    summaryDiv.className = 'glass-card admin-section';
+    summaryDiv.innerHTML = `
+        <div class="section-header-admin">
+            <h3>Current Tournament Summary</h3>
+        </div>
+        <table class="players-table">
+            <thead>
+                <tr>
+                    <th>Player</th>
+                    <th>Club</th>
+                    <th>Matches</th>
+                    <th>Goals</th>
+                    <th>Wins</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${tournament.players.map(p => {
+                    const player = getPlayers().find(pl => pl.id === p.id);
+                    return `
+                        <tr>
+                            <td>${p.name}</td>
+                            <td>${p.clubName}</td>
+                            <td>${player?.matchesPlayed || 0}</td>
+                            <td>${player?.goals || 0}</td>
+                            <td>${player?.wins || 0}</td>
+                        </tr>
+                    `;
+                }).join('')}
+            </tbody>
+        </table>
+        <div class="actions">
+            <button class="btn-icon" onclick="resetCurrentTournamentStats()"><svg>...</svg> Reset Stats</button>
+            <button class="btn-icon" onclick="deleteTournament()"><svg>...</svg> Delete</button>
+        </div>
+    `;
+    container.insertBefore(summaryDiv, container.firstChild);
+}
+
+function resetCurrentTournamentStats() {
+    if (!confirm('Reset stats for current tournament?')) return;
+    
+    const tournament = getActiveTournament();
+    if (!tournament) return;
     
     const players = getPlayers();
+    
+    tournament.matches.forEach(match => revertMatchStats(match, players, tournament));
+    
+    tournament.matches.forEach(m => {
+        m.completed = false;
+        m.score1 = null;
+        m.score2 = null;
+        m.penalties1 = null;
+        m.penalties2 = null;
+        m.winner = null;
+        m.finalsTracked = false;
+    });
+    
+    tournament.status = 'registration';
+    tournament.currentRound = 1;
+    tournament.rounds = [];
+    tournament.winner = null;
+    
+    savePlayers(players);
+    saveActiveTournament(tournament);
+    showToast('Current tournament stats reset');
+    showAdminDashboard();
+}
+
+function loadAdminStats() {
+    const players = getPlayers();
+    const tournaments = getTournaments();
+    
+    document.getElementById('adminTotalTournaments').textContent = tournaments.length;
+    document.getElementById('adminTotalPlayers').textContent = players.length;
+    document.getElementById('adminTotalMatches').textContent = 
+        tournaments.reduce((sum, t) => sum + (t.matches?.length || 0), 0);
+}
+
+function loadPlayerManagement() {
+    const container = document.getElementById('playerManagement');
+    const players = getPlayers().filter(p => !p.isAdmin);
+    
+    if (players.length === 0) {
+        container.innerHTML = '<p class="empty-state">No players registered yet</p>';
+        return;
+    }
     
     container.innerHTML = `
         <div class="glass-card admin-section">
             <div class="section-header-admin">
                 <h3>👥 Player Management</h3>
-                <p class="section-subtitle">Total Players: ${players.length}</p>
             </div>
-            
-            <div class="players-table-container">
-                <table class="stats-table admin-table">
-                    <thead>
+            <table class="players-table">
+                <thead>
+                    <tr>
+                        <th>Club</th>
+                        <th>Name</th>
+                        <th>Club</th>
+                        <th>Matches</th>
+                        <th>Goals</th>
+                        <th>Wins</th>
+                        <th>Titles</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${players.map(p => `
                         <tr>
-                            <th>Logo</th>
-                            <th>Club</th>
-                            <th>Player Name</th>
-                            <th>Matches</th>
-                            <th>Finals</th>
-                            <th>Championships</th>
-                            <th>Joined</th>
-                            <th>Actions</th>
+                            <td><img src="${p.clubLogo}" class="table-club-logo" onerror="this.style.display='none'"></td>
+                            <td>${p.name}</td>
+                            <td>${p.clubName}</td>
+                            <td>${p.matchesPlayed || 0}</td>
+                            <td>${p.goals || 0}</td>
+                            <td>${p.wins || 0}</td>
+                            <td class="highlight-cell">${p.championships || 0}</td>
+                            <td>
+                                <button onclick="resetPlayerStats('${p.id}')">Reset Stats</button>
+                                <button onclick="removePlayerClub('${p.id}')">Remove Club</button>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        ${players.length === 0 ? '<tr><td colspan="8" class="empty-state">No players registered yet</td></tr>' : players.map(player => `
-                            <tr>
-                                <td>
-                                    <img src="${player.clubLogo}" alt="${player.clubName}" class="table-club-logo" onerror="this.style.display='none'">
-                                </td>
-                                <td class="club-name-cell">${player.clubName}</td>
-                                <td class="player-name-cell">${player.name}</td>
-                                <td>${player.matchesPlayed || 0}</td>
-                                <td>${player.finalsReached || 0}</td>
-                                <td class="highlight-cell">${player.championships || 0}</td>
-                                <td>${new Date(player.createdAt).toLocaleDateString()}</td>
-                                <td>
-                                    <button class="btn-icon-small" onclick="resetPlayerStats('${player.id}')" title="Reset Stats" style="margin-right: 8px;">
-                                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
-                                            <path d="M4 10a6 6 0 1112 0M4 10V4m0 6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                        </svg>
-                                    </button>
-                                    <button class="btn-delete-small" onclick="deletePlayer('${player.id}', '${player.name}')" title="Delete Player">
-                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                            <path d="M2 4h12M6 4V3a1 1 0 011-1h2a1 1 0 011 1v1m2 0v9a1 1 0 01-1 1H5a1 1 0 01-1-1V4h8z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                        </svg>
-                                    </button>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            </div>
+                    `).join('')}
+                </tbody>
+            </table>
         </div>
     `;
 }
 
-
-// Reset Player Stats - NEW FUNCTION
 function resetPlayerStats(playerId) {
-    if (!confirm('Reset all stats for this player to 0?')) return;
+    if (!confirm('Reset player stats? This cannot be undone.')) return;
     
     const players = getPlayers();
     const player = players.find(p => p.id === playerId);
-    
-    if (!player) return;
-    
-    player.tournaments = 0;
-    player.matchesPlayed = 0;
-    player.wins = 0;
-    player.losses = 0;
-    player.goals = 0;
-    player.championships = 0;
-    player.finalsReached = 0;
-    
-    savePlayers(players);
-    showToast(`Stats reset for ${player.name}`);
-    loadPlayerManagement();
-    loadAdminLeaderboards();
+    if (player) {
+        player.matchesPlayed = 0;
+        player.goals = 0;
+        player.wins = 0;
+        player.losses = 0;
+        player.championships = 0;
+        player.finalsReached = 0;
+        player.tournaments = 0;
+        savePlayers(players);
+        showToast('Player stats reset');
+        loadPlayerManagement();
+    }
 }
 
-// Delete Player Function
-function deletePlayer(playerId, playerName) {
-    if (!confirm(`Are you sure you want to delete ${playerName}?\n\nThis action cannot be undone and will:\n- Remove their account\n- Free up their club\n- Remove their tournament history`)) {
-        return;
+function removePlayerClub(playerId) {
+    if (!confirm('Remove player club? They can re-register.')) return;
+    
+    const players = getPlayers();
+    const player = players.find(p => p.id === playerId);
+    if (player) {
+        player.clubId = null;
+        player.clubName = '';
+        player.clubLogo = '';
+        savePlayers(players);
+        showToast('Club removed');
+        loadPlayerManagement();
     }
-    
-    let players = getPlayers();
-    players = players.filter(p => p.id !== playerId);
-    savePlayers(players);
-    
-    // Also remove from active tournament if registered
-    const activeTournament = getActiveTournament();
-    if (activeTournament) {
-        activeTournament.players = activeTournament.players.filter(p => p.id !== playerId);
-        saveActiveTournament(activeTournament);
-    }
-    
-    showToast(`${playerName} has been deleted`, 'success');
-    loadPlayerManagement();
-    loadAdminLeaderboards();
-    
-    // Update stats
-    const tournaments = getTournaments();
-    document.getElementById('adminTotalPlayers').textContent = players.length;
 }
 
-// Show Active Tournament Panel
-function showActiveTournamentPanel(tournament) {
-    const panel = document.getElementById('activeTournamentPanel');
-    panel.style.display = 'block';
-    
-    const statusBadge = document.getElementById('tournamentStatusBadge');
-    statusBadge.innerHTML = `
-        <span class="status-badge status-${tournament.status}">
-            ${tournament.status === 'registration' ? '📝 Registration' : 
-              tournament.status === 'active' ? '🎮 Active' : '✅ Completed'}
-        </span>
-    `;
-    
-    const regStatus = document.getElementById('registrationStatus');
-    regStatus.textContent = `${tournament.players.length}/${tournament.maxPlayers} players registered`;
-    
-    const startBtn = document.getElementById('startTournamentBtn');
-    if (tournament.status === 'registration') {
-        startBtn.style.display = tournament.players.length >= 4 ? 'block' : 'none';
-        document.getElementById('matchManagement').style.display = 'none';
-    } else if (tournament.status === 'active') {
-        startBtn.style.display = 'none';
-        document.getElementById('matchManagement').style.display = 'block';
-        loadMatchManagement(tournament);
-    }
-    
-    displayBracket(tournament);
-}
-
-// Create Tournament
 function createTournament() {
     const size = parseInt(document.getElementById('tournamentSize').value);
     const type = document.getElementById('tournamentType').value;
-    const errorMsg = document.getElementById('tournamentError');
+    const error = document.getElementById('tournamentError');
     
-    errorMsg.textContent = '';
-    
-    // Check if there's already an active tournament
-    const activeTournament = getActiveTournament();
-    if (activeTournament && activeTournament.status !== 'completed') {
-        errorMsg.textContent = 'Please complete or delete the current tournament first';
+    if (getActiveTournament()) {
+        error.textContent = 'There is already an active tournament';
         return;
     }
     
-    // Create new tournament
+    const players = getPlayers().filter(p => !p.isAdmin);
+    if (players.length < size) {
+        error.textContent = `Not enough players (${players.length}/${size})`;
+        return;
+    }
+    
     const tournament = {
         id: generateId(),
         maxPlayers: size,
@@ -704,505 +712,472 @@ function createTournament() {
         players: [],
         matches: [],
         rounds: [],
+        currentRound: 1,
         createdAt: new Date().toISOString()
     };
     
     saveActiveTournament(tournament);
-    showToast('Tournament created! Waiting for players to register.');
+    showToast(`New tournament created! Players can now register.`);
     showAdminDashboard();
 }
 
-// Start Tournament
-function startTournament() {
+function loadActiveTournament() {
     const tournament = getActiveTournament();
+    const panel = document.getElementById('activeTournamentPanel');
     
-    if (!tournament) return;
-    
-    if (tournament.players.length < 4) {
-        showToast('Need at least 4 players to start', 'error');
+    if (!tournament) {
+        panel.style.display = 'none';
         return;
     }
     
-    // Create bracket
-    tournament.status = 'active';
-    createBracket(tournament);
+    panel.style.display = 'block';
     
-    saveActiveTournament(tournament);
-    showToast('Tournament started!');
-    showAdminDashboard();
+    document.getElementById('registrationStatus').textContent = 
+        tournament.status === 'registration' 
+            ? `Registration open: ${tournament.players.length}/${tournament.maxPlayers} players`
+            : tournament.status === 'active'
+                ? `Tournament in progress - Round ${tournament.currentRound || 1}`
+                : 'Tournament completed';
+    
+    document.getElementById('startTournamentBtn').style.display = 
+        tournament.status === 'registration' ? 'inline-block' : 'none';
+    
+    document.getElementById('matchManagement').style.display = 
+        tournament.status === 'active' ? 'block' : 'none';
+    
+    if (tournament.status === 'active') {
+        loadMatchManagement();
+        displayBracket(tournament);
+    }
 }
 
-// Create Bracket
-function createBracket(tournament) {
-    const players = [...tournament.players];
+function startTournament() {
+    const tournament = getActiveTournament();
+    if (!tournament || tournament.status !== 'registration') return;
     
-    // Shuffle players
-    for (let i = players.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [players[i], players[j]] = [players[j], players[i]];
+    if (tournament.players.length < tournament.maxPlayers) {
+        if (!confirm(`Start with ${tournament.players.length} players? (Less than max ${tournament.maxPlayers})`)) return;
     }
     
-    // Calculate rounds
-    const numPlayers = players.length;
-    const numRounds = Math.ceil(Math.log2(numPlayers));
-    
-    tournament.rounds = [];
-    tournament.matches = [];
-    
-    // Create first round matches
-    const firstRound = {
-        roundNumber: 1,
-        name: numPlayers === 4 ? 'Semi-Finals' : numPlayers === 8 ? 'Quarter-Finals' : 'Round 1',
-        matches: []
-    };
-    
-    for (let i = 0; i < players.length; i += 2) {
-        const match = {
-            id: generateId(),
-            roundNumber: 1,
-            player1: players[i],
-            player2: players[i + 1] || null,
-            score1: null,
-            score2: null,
-            winner: players[i + 1] ? null : players[i],
-            completed: !players[i + 1]
-        };
-        
-        firstRound.matches.push(match);
-        tournament.matches.push(match);
+    if (tournament.players.length < 2) {
+        showToast('Need at least 2 players', 'error');
+        return;
     }
     
-    tournament.rounds.push(firstRound);
+    tournament.status = 'active';
     
-    // Create subsequent rounds
-    for (let r = 2; r <= numRounds; r++) {
-        const round = {
-            roundNumber: r,
-            name: r === numRounds ? 'Final' : r === numRounds - 1 ? 'Semi-Finals' : `Round ${r}`,
-            matches: []
-        };
-        
-        const prevRound = tournament.rounds[r - 2];
-        const numMatches = Math.ceil(prevRound.matches.length / 2);
-        
-        for (let i = 0; i < numMatches; i++) {
-            const match = {
+    const shuffled = [...tournament.players].sort(() => Math.random() - 0.5);
+    const matches = [];
+    
+    for (let i = 0; i < shuffled.length; i += 2) {
+        if (i + 1 < shuffled.length) {
+            matches.push({
                 id: generateId(),
-                roundNumber: r,
-                player1: null,
+                roundNumber: 1,
+                player1: shuffled[i],
+                player2: shuffled[i + 1],
+                score1: null,
+                score2: null,
+                penalties1: null,
+                penalties2: null,
+                winner: null,
+                completed: false,
+                finalsTracked: false
+            });
+        } else {
+            // Bye for odd number
+            matches.push({
+                id: generateId(),
+                roundNumber: 1,
+                player1: shuffled[i],
                 player2: null,
                 score1: null,
                 score2: null,
-                winner: null,
-                completed: false
-            };
-            
-            round.matches.push(match);
-            tournament.matches.push(match);
-        }
-        
-        tournament.rounds.push(round);
-    }
-}
-
-// Load Match Management
-function loadMatchManagement(tournament) {
-    const matchesList = document.getElementById('matchesList');
-    
-    const currentRound = tournament.rounds.find(r => 
-        r.matches.some(m => !m.completed && m.player1 && m.player2)
-    );
-    
-    if (!currentRound) {
-        matchesList.innerHTML = '<p class="empty-state">All matches completed!</p>';
-        return;
-    }
-    
-    matchesList.innerHTML = `
-        <h4 class="round-title">${currentRound.name}</h4>
-        ${currentRound.matches.map(match => {
-            if (!match.player1 || !match.player2) return '';
-            
-            return `
-                <div class="match-card ${match.completed ? 'match-completed' : ''}">
-                    <div class="match-players">
-                        <div class="match-player-item">
-                            <img src="${match.player1.clubLogo}" alt="${match.player1.clubName}" class="match-player-logo">
-                            <div class="match-player-details">
-                                <span class="match-player-name">${match.player1.name}</span>
-                                <span class="match-club-name">${match.player1.clubName}</span>
-                            </div>
-                        </div>
-                        <span class="match-vs">VS</span>
-                        <div class="match-player-item">
-                            <img src="${match.player2.clubLogo}" alt="${match.player2.clubName}" class="match-player-logo">
-                            <div class="match-player-details">
-                                <span class="match-player-name">${match.player2.name}</span>
-                                <span class="match-club-name">${match.player2.clubName}</span>
-                            </div>
-                        </div>
-                    </div>
-                    ${match.completed ? `
-                        <div class="match-result-saved">
-                            <div class="result-scores">
-                                <div class="score-display ${match.score1 > match.score2 ? 'winner-score' : ''}">
-                                    <span class="score-label">${match.player1.name}</span>
-                                    <span class="score-value">${match.score1}</span>
-                                </div>
-                                <span class="score-separator">-</span>
-                                <div class="score-display ${match.score2 > match.score1 ? 'winner-score' : ''}">
-                                    <span class="score-label">${match.player2.name}</span>
-                                    <span class="score-value">${match.score2}</span>
-                                </div>
-                            </div>
-                            <div class="match-winner-info">
-                                <p class="winner-badge-small">🏆 Winner: ${match.winner.name}</p>
-                            </div>
-                            <button onclick="editMatch('${match.id}')" class="btn-edit-score">
-                                ✏️ Change Result
-                            </button>
-                        </div>
-                    ` : `
-                        <div class="match-score-input">
-                            <div class="score-input-group">
-                                <label>${match.player1.name}</label>
-                                <input type="number" id="score1_${match.id}" min="0" placeholder="0" class="score-input">
-                            </div>
-                            <span style="font-size: 24px; color: var(--text-secondary);">-</span>
-                            <div class="score-input-group">
-                                <label>${match.player2.name}</label>
-                                <input type="number" id="score2_${match.id}" min="0" placeholder="0" class="score-input">
-                            </div>
-                        </div>
-                        <button onclick="submitMatchResult('${match.id}')" class="btn-submit-score">
-                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                                <path d="M16 6L8.5 13.5L4 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                            Submit Result
-                        </button>
-                    `}
-                </div>
-            `;
-        }).join('')}
-    `;
-}
-
-// Submit Match Result - FIXED VERSION
-function submitMatchResult(matchId) {
-    const tournament = getActiveTournament();
-    const match = tournament.matches.find(m => m.id === matchId);
-    
-    // Prevent double submission
-    if (match.completed) {
-        showToast('Match already completed', 'error');
-        return;
-    }
-    
-    const score1 = parseInt(document.getElementById(`score1_${matchId}`).value);
-    const score2 = parseInt(document.getElementById(`score2_${matchId}`).value);
-    
-    if (isNaN(score1) || isNaN(score2)) {
-        showToast('Please enter valid scores', 'error');
-        return;
-    }
-    
-    if (score1 === score2) {
-        showToast('Match cannot be a tie', 'error');
-        return;
-    }
-    
-    match.score1 = score1;
-    match.score2 = score2;
-    match.winner = score1 > score2 ? match.player1 : match.player2;
-    match.completed = true;
-    
-    // Update player stats
-    const players = getPlayers();
-    const p1 = players.find(p => p.id === match.player1.id);
-    const p2 = players.find(p => p.id === match.player2.id);
-    
-    if (p1) {
-        p1.matchesPlayed = (p1.matchesPlayed || 0) + 1;
-        p1.goals = (p1.goals || 0) + score1;
-        if (match.winner.id === p1.id) {
-            p1.wins = (p1.wins || 0) + 1;
-        } else {
-            p1.losses = (p1.losses || 0) + 1;
+                winner: shuffled[i],
+                completed: true
+            });
         }
     }
     
-    if (p2) {
-        p2.matchesPlayed = (p2.matchesPlayed || 0) + 1;
-        p2.goals = (p2.goals || 0) + score2;
-        if (match.winner.id === p2.id) {
-            p2.wins = (p2.wins || 0) + 1;
-        } else {
-            p2.losses = (p2.losses || 0) + 1;
-        }
-    }
-    
-    savePlayers(players);
-    
-    // Advance winner to next round
-    advanceWinner(tournament, match);
-    
-    // Check if round is complete
-    const currentRound = tournament.rounds.find(r => r.roundNumber === match.roundNumber);
-    const allCompleted = currentRound.matches.every(m => m.completed);
-    
-    if (allCompleted) {
-        // Check if final
-        if (match.roundNumber === tournament.rounds.length) {
-            completeTournament(tournament, match.winner);
-        }
-    }
+    tournament.matches = matches;
+    tournament.rounds = [{ name: 'Round 1', matches }];
+    tournament.currentRound = 1;
     
     saveActiveTournament(tournament);
-    showToast('Match result recorded!');
-    showAdminDashboard();
+    showToast('Tournament started!');
+    loadActiveTournament();
 }
 
-// Reset Match - NEW FUNCTION
-function editMatch(matchId) {
-    if (!confirm('Do you want to change this match result? This will reopen the score inputs.')) {
-        return;
-    }
-    
-    const tournament = getActiveTournament();
-    const match = tournament.matches.find(m => m.id === matchId);
-    
-    if (!match || !match.completed) return;
-    
-    // Revert player stats
-    const players = getPlayers();
-    const p1 = players.find(p => p.id === match.player1.id);
-    const p2 = players.find(p => p.id === match.player2.id);
-    
-    if (p1) {
-        p1.matchesPlayed = Math.max(0, (p1.matchesPlayed || 0) - 1);
-        p1.goals = Math.max(0, (p1.goals || 0) - (match.score1 || 0));
-        if (match.winner?.id === p1.id) {
-            p1.wins = Math.max(0, (p1.wins || 0) - 1);
-        } else {
-            p1.losses = Math.max(0, (p1.losses || 0) - 1);
-        }
-    }
-    
-    if (p2) {
-        p2.matchesPlayed = Math.max(0, (p2.matchesPlayed || 0) - 1);
-        p2.goals = Math.max(0, (p2.goals || 0) - (match.score2 || 0));
-        if (match.winner?.id === p2.id) {
-            p2.wins = Math.max(0, (p2.wins || 0) - 1);
-        } else {
-            p2.losses = Math.max(0, (p2.losses || 0) - 1);
-        }
-    }
-    
-    savePlayers(players);
-    
-    // Remove winner from next round
-    const nextRound = tournament.rounds.find(r => r.roundNumber === match.roundNumber + 1);
-    if (nextRound) {
-        const currentRound = tournament.rounds.find(r => r.roundNumber === match.roundNumber);
-        const matchIndex = currentRound.matches.indexOf(match);
-        const nextMatchIndex = Math.floor(matchIndex / 2);
-        const nextMatch = nextRound.matches[nextMatchIndex];
-        
-        if (matchIndex % 2 === 0) {
-            nextMatch.player1 = null;
-        } else {
-            nextMatch.player2 = null;
-        }
-    }
-    
-    // Reset match
-    match.score1 = null;
-    match.score2 = null;
-    match.winner = null;
-    match.completed = false;
-    
-    saveActiveTournament(tournament);
-    showToast('Match reopened for editing');
-    showAdminDashboard();
-}
-
-// Advance Winner
-function advanceWinner(tournament, match) {
-    const nextRound = tournament.rounds.find(r => r.roundNumber === match.roundNumber + 1);
-    
-    if (!nextRound) return;
-    
-    const currentRound = tournament.rounds.find(r => r.roundNumber === match.roundNumber);
-    const matchIndex = currentRound.matches.indexOf(match);
-    const nextMatchIndex = Math.floor(matchIndex / 2);
-    const nextMatch = nextRound.matches[nextMatchIndex];
-    
-    if (matchIndex % 2 === 0) {
-        nextMatch.player1 = match.winner;
-    } else {
-        nextMatch.player2 = match.winner;
-    }
-    
-    // FIXED: Check if it's the final AND both finalists are now set
-    if (nextRound.roundNumber === tournament.rounds.length) {
-        // Only increment finalsReached when BOTH players are determined for the final
-        if (nextMatch.player1 && nextMatch.player2 && !nextMatch.finalsTracked) {
-            const players = getPlayers();
-            const p1 = players.find(p => p.id === nextMatch.player1.id);
-            const p2 = players.find(p => p.id === nextMatch.player2.id);
-            
-            if (p1) p1.finalsReached = (p1.finalsReached || 0) + 1;
-            if (p2) p2.finalsReached = (p2.finalsReached || 0) + 1;
-            
-            nextMatch.finalsTracked = true; // Mark to prevent double increment
-            savePlayers(players);
-        }
-    }
-}
-
-// Complete Tournament
-function completeTournament(tournament, winner) {
-    tournament.status = 'completed';
-    tournament.winner = winner;
-    tournament.completedAt = new Date().toISOString();
-    
-    // Update winner stats
-    const players = getPlayers();
-    const winnerPlayer = players.find(p => p.id === winner.id);
-    
-    if (winnerPlayer) {
-        winnerPlayer.championships = (winnerPlayer.championships || 0) + 1;
-        winnerPlayer.tournaments = (winnerPlayer.tournaments || 0) + 1;
-        savePlayers(players);
-    }
-    
-    // Update all participants
-    tournament.players.forEach(tp => {
-        const player = players.find(p => p.id === tp.id);
-        if (player && player.id !== winner.id) {
-            player.tournaments = (player.tournaments || 0) + 1;
-        }
-    });
-    savePlayers(players);
-    
-    // Save to history
-    const tournaments = getTournaments();
-    tournaments.push(tournament);
-    saveTournaments(tournaments);
-    
-    saveActiveTournament(null);
-    
-    showToast(`🏆 ${winner.name} wins the tournament!`);
-}
-
-// Delete Tournament - ENHANCED WITH STATS CLEANUP
-function deleteTournament() {
-    if (!confirm('Delete this tournament? All match data from this tournament will be removed from player stats.')) {
-        return;
-    }
-    
+function advanceTournament() {
     const tournament = getActiveTournament();
     if (!tournament) return;
     
-    // Revert all stats from this tournament
-    const players = getPlayers();
+    const currentRound = tournament.currentRound;
+    const roundMatches = tournament.matches.filter(m => m.roundNumber === currentRound);
     
-    tournament.matches.forEach(match => {
-        if (!match.completed) return;
-        
-        const p1 = players.find(p => p.id === match.player1?.id);
-        const p2 = players.find(p => p.id === match.player2?.id);
-        
-        if (p1) {
-            p1.matchesPlayed = Math.max(0, (p1.matchesPlayed || 0) - 1);
-            p1.goals = Math.max(0, (p1.goals || 0) - (match.score1 || 0));
-            if (match.winner?.id === p1.id) {
-                p1.wins = Math.max(0, (p1.wins || 0) - 1);
-            } else {
-                p1.losses = Math.max(0, (p1.losses || 0) - 1);
-            }
-        }
-        
-        if (p2) {
-            p2.matchesPlayed = Math.max(0, (p2.matchesPlayed || 0) - 1);
-            p2.goals = Math.max(0, (p2.goals || 0) - (match.score2 || 0));
-            if (match.winner?.id === p2.id) {
-                p2.wins = Math.max(0, (p2.wins || 0) - 1);
-            } else {
-                p2.losses = Math.max(0, (p2.losses || 0) - 1);
-            }
-        }
-    });
+    if (!roundMatches.every(m => m.completed)) return;
     
-    // Revert finals reached
-    const finalMatch = tournament.matches.find(m => m.roundNumber === tournament.rounds?.length);
-    if (finalMatch && finalMatch.finalsTracked) {
-        const fp1 = players.find(p => p.id === finalMatch.player1?.id);
-        const fp2 = players.find(p => p.id === finalMatch.player2?.id);
+    const winners = roundMatches.map(m => m.winner);
+    
+    if (winners.length <= 1) {
+        tournament.status = 'completed';
+        tournament.winner = winners[0];
         
-        if (fp1) fp1.finalsReached = Math.max(0, (fp1.finalsReached || 0) - 1);
-        if (fp2) fp2.finalsReached = Math.max(0, (fp2.finalsReached || 0) - 1);
-    }
-    
-    savePlayers(players);
-    saveActiveTournament(null);
-    showToast('Tournament deleted and stats reverted');
-    showAdminDashboard();
-}
-
-// Display Bracket
-function displayBracket(tournament) {
-    const bracket = document.getElementById('adminBracket');
-    
-    if (!tournament.rounds || tournament.rounds.length === 0) {
-        bracket.innerHTML = '';
+        saveActiveTournament(null);
+        const tournaments = getTournaments();
+        saveTournaments([...tournaments, tournament]);
+        
+        showToast(`Tournament completed! Champion: ${tournament.winner?.name || 'N/A'}`);
+        showAdminDashboard();
         return;
     }
     
-    bracket.innerHTML = tournament.rounds.map(round => `
-        <div class="bracket-round">
-            <h4>${round.name}</h4>
-            <div class="bracket-matches">
-                ${round.matches.map(match => {
-                    if (!match.player1 && !match.player2) return '';
-                    
-                    return `
-                        <div class="bracket-match ${match.completed ? 'completed' : ''}">
-                            ${match.player1 ? `
-                                <div class="match-player ${match.winner?.id === match.player1.id ? 'winner' : ''}">
-                                    <div class="player-match-info">
-                                        <img src="${match.player1.clubLogo}" class="player-match-avatar" onerror="this.style.display='none'">
-                                        <span class="player-match-name">${match.player1.name}</span>
-                                    </div>
-                                    ${match.score1 !== null ? `<span class="player-score">${match.score1}</span>` : ''}
-                                </div>
-                            ` : '<div class="match-player">TBD</div>'}
-                            
-                            ${match.player2 ? `
-                                <div class="match-player ${match.winner?.id === match.player2.id ? 'winner' : ''}">
-                                    <div class="player-match-info">
-                                        <img src="${match.player2.clubLogo}" class="player-match-avatar" onerror="this.style.display='none'">
-                                        <span class="player-match-name">${match.player2.name}</span>
-                                    </div>
-                                    ${match.score2 !== null ? `<span class="player-score">${match.score2}</span>` : ''}
-                                </div>
-                            ` : '<div class="match-player">TBD</div>'}
-                        </div>
-                    `;
-                }).join('')}
+    const nextRound = currentRound + 1;
+    const nextMatches = [];
+    
+    for (let i = 0; i < winners.length; i += 2) {
+        if (i + 1 < winners.length) {
+            nextMatches.push({
+                id: generateId(),
+                roundNumber: nextRound,
+                player1: winners[i],
+                player2: winners[i + 1],
+                score1: null,
+                score2: null,
+                penalties1: null,
+                penalties2: null,
+                winner: null,
+                completed: false,
+                finalsTracked: false
+            });
+        } else {
+            // Bye
+            nextMatches.push({
+                id: generateId(),
+                roundNumber: nextRound,
+                player1: winners[i],
+                player2: null,
+                score1: null,
+                score2: null,
+                winner: winners[i],
+                completed: true
+            });
+        }
+    }
+    
+    tournament.matches.push(...nextMatches);
+    tournament.rounds.push({ name: `Round ${nextRound}`, matches: nextMatches });
+    tournament.currentRound = nextRound;
+    
+    saveActiveTournament(tournament);
+    showToast(`Advanced to Round ${nextRound}`);
+    loadActiveTournament();
+}
+
+function loadMatchManagement() {
+    const container = document.getElementById('matchesList');
+    const tournament = getActiveTournament();
+    if (!tournament) return;
+    
+    const matches = tournament.matches.filter(m => m.roundNumber === tournament.currentRound);
+    
+    container.innerHTML = matches.map(match => `
+        <div class="match-card glass-card" id="match_${match.id}">
+            <div class="match-header">
+                <span class="match-title">Match #${match.id.slice(0,6)}</span>
+                <span class="match-round">Round ${match.roundNumber}</span>
             </div>
+            <div class="match-players">
+                <div class="match-player">
+                    <img src="${match.player1?.clubLogo}" class="match-player-logo" onerror="this.style.display='none'">
+                    <span class="match-player-name">${match.player1?.name || 'Bye'}</span>
+                    <span class="match-club-name">${match.player1?.clubName || ''}</span>
+                </div>
+                <span class="match-vs">VS</span>
+                <div class="match-player">
+                    <img src="${match.player2?.clubLogo}" class="match-player-logo" onerror="this.style.display='none'">
+                    <span class="match-player-name">${match.player2?.name || 'Bye'}</span>
+                    <span class="match-club-name">${match.player2?.clubName || ''}</span>
+                </div>
+            </div>
+            ${match.completed ? `
+                <div class="match-result">
+                    <span class="score-display">
+                        ${match.score1 ?? '-'} - ${match.score2 ?? '-'}
+                        ${match.penalties1 !== null ? ` (${match.penalties1}-${match.penalties2} pens)` : ''}
+                    </span>
+                    <span class="winner-name">Winner: ${match.winner.name}</span>
+                    <button class="btn-edit-score" onclick="enableScoreEdit('${match.id}')">
+                        Edit Score
+                    </button>
+                </div>
+            ` : `
+                <div class="match-score-input">
+                    <div class="score-input-group">
+                        <label>${match.player1?.name || 'Bye'}</label>
+                        <input type="number" id="score1_${match.id}" value="0" min="0" class="score-input">
+                    </div>
+                    <div class="score-input-group">
+                        <label>${match.player2?.name || 'Bye'}</label>
+                        <input type="number" id="score2_${match.id}" value="0" min="0" class="score-input">
+                    </div>
+                </div>
+                <button class="btn-submit-score" onclick="updateMatchScore('${match.id}')">
+                    Submit Scores
+                </button>
+            `}
         </div>
     `).join('');
 }
 
-// Load Admin Leaderboards
-function loadAdminLeaderboards() {
-    const container = document.getElementById('adminLeaderboards');
+// Helper to revert stats for a match (used during edits)
+function revertMatchStats(match, players, tournament) {
+    const p1 = players.find(p => p.id === match.player1?.id);
+    const p2 = players.find(p => p.id === match.player2?.id);
+    
+    if (p1 && p2 && match.completed && match.score1 !== null && match.score2 !== null) {
+        // Revert common stats
+        p1.matchesPlayed = Math.max(0, (p1.matchesPlayed || 0) - 1);
+        p2.matchesPlayed = Math.max(0, (p2.matchesPlayed || 0) - 1);
+        p1.goals = Math.max(0, (p1.goals || 0) - match.score1);
+        p2.goals = Math.max(0, (p2.goals || 0) - match.score2);
+        
+        // Revert win/loss
+        if (match.winner?.id === p1.id) {
+            p1.wins = Math.max(0, (p1.wins || 0) - 1);
+            p2.losses = Math.max(0, (p2.losses || 0) - 1);
+        } else if (match.winner?.id === p2.id) {
+            p2.wins = Math.max(0, (p2.wins || 0) - 1);
+            p1.losses = Math.max(0, (p1.losses || 0) - 1);
+        }
+        
+        // If final match, revert finals/championships
+        const isFinal = match.roundNumber === tournament.rounds?.length;
+        if (isFinal) {
+            p1.finalsReached = Math.max(0, (p1.finalsReached || 0) - 1);
+            p2.finalsReached = Math.max(0, (p2.finalsReached || 0) - 1);
+            if (match.winner?.id === p1.id) {
+                p1.championships = Math.max(0, (p1.championships || 0) - 1);
+            } else if (match.winner?.id === p2.id) {
+                p2.championships = Math.max(0, (p2.championships || 0) - 1);
+            }
+        }
+    }
+}
+
+function updateMatchScore(matchId) {
+    const tournament = getActiveTournament();
+    if (!tournament) return;
+    
+    const match = tournament.matches.find(m => m.id === matchId);
+    if (!match) return;
+    
+    const score1Input = document.getElementById(`score1_${match.id}`);
+    const score2Input = document.getElementById(`score2_${match.id}`);
+    const submitBtn = document.querySelector(`button[onclick="updateMatchScore('${matchId}')"]`);
+    
+    if (!score1Input || !score2Input) return;
+    
+    if (submitBtn) submitBtn.disabled = true;
+    
+    const score1 = parseInt(score1Input.value);
+    const score2 = parseInt(score2Input.value);
+    
+    if (isNaN(score1) || isNaN(score2) || score1 < 0 || score2 < 0) {
+        showToast('Invalid scores', 'error');
+        if (submitBtn) submitBtn.disabled = false;
+        return;
+    }
+    
     const players = getPlayers();
     
-    const topPlayers = [...players]
-        .sort((a, b) => (b.championships || 0) - (a.championships || 0))
-        .slice(0, 10);
+    if (match.completed) {
+        revertMatchStats(match, players, tournament);
+    }
+    
+    let winner = score1 > score2 ? match.player1 : match.player2;
+    let penalties1 = null;
+    let penalties2 = null;
+    
+    if (score1 === score2) {
+        // Tiebreaker: Penalties
+        penalties1 = parseInt(prompt(`${match.player1.name} penalty goals:`));
+        penalties2 = parseInt(prompt(`${match.player2.name} penalty goals:`));
+        
+        if (isNaN(penalties1) || isNaN(penalties2) || penalties1 < 0 || penalties2 < 0 || penalties1 === penalties2) {
+            showToast('Invalid penalties - must differ', 'error');
+            if (submitBtn) submitBtn.disabled = false;
+            return;
+        }
+        
+        winner = penalties1 > penalties2 ? match.player1 : match.player2;
+    }
+    
+    match.score1 = score1;
+    match.score2 = score2;
+    match.penalties1 = penalties1;
+    match.penalties2 = penalties2;
+    match.completed = true;
+    match.winner = winner;
+    
+    const p1 = players.find(p => p.id === match.player1?.id);
+    const p2 = players.find(p => p.id === match.player2?.id);
+    
+    if (p1 && p2) {
+        p1.matchesPlayed = (p1.matchesPlayed || 0) + 1;
+        p2.matchesPlayed = (p2.matchesPlayed || 0) + 1;
+        p1.goals = (p1.goals || 0) + score1;
+        p2.goals = (p2.goals || 0) + score2;
+        
+        if (match.winner.id === p1.id) {
+            p1.wins = (p1.wins || 0) + 1;
+            p2.losses = (p2.losses || 0) + 1;
+        } else {
+            p2.wins = (p2.wins || 0) + 1;
+            p1.losses = (p1.losses || 0) + 1;
+        }
+        
+        const isFinal = match.roundNumber === tournament.rounds?.length;
+        if (isFinal && !match.finalsTracked) {
+            p1.finalsReached = (p1.finalsReached || 0) + 1;
+            p2.finalsReached = (p2.finalsReached || 0) + 1;
+            const champ = match.winner.id === p1.id ? p1 : p2;
+            champ.championships = (champ.championships || 0) + 1;
+            match.finalsTracked = true;
+        }
+    }
+    
+    savePlayers(players);
+    saveActiveTournament(tournament);
+    
+    const currentRoundMatches = tournament.matches.filter(m => m.roundNumber === tournament.currentRound);
+    if (currentRoundMatches.every(m => m.completed)) {
+        advanceTournament();
+    }
+    
+    loadMatchManagement();
+    displayBracket(tournament);
+    showAdminDashboard();
+    
+    showToast('Match updated');
+    
+    if (submitBtn) submitBtn.disabled = false;
+}
+
+function enableScoreEdit(matchId) {
+    const tournament = getActiveTournament();
+    const match = tournament?.matches.find(m => m.id === matchId);
+    if (!match) return;
+    
+    const element = document.getElementById(`match_${matchId}`);
+    if (!element) return;
+    
+    element.innerHTML = `
+        <div class="match-header">
+            <span class="match-title">Match #${match.id.slice(0,6)}</span>
+            <span class="match-round">Round ${match.roundNumber}</span>
+        </div>
+        <div class="match-players">
+            <div class="match-player">
+                <img src="${match.player1.clubLogo}" class="match-player-logo" onerror="this.style.display='none'">
+                <span class="match-player-name">${match.player1.name}</span>
+                <span class="match-club-name">${match.player1.clubName}</span>
+            </div>
+            <span class="match-vs">VS</span>
+            <div class="match-player">
+                <img src="${match.player2.clubLogo}" class="match-player-logo" onerror="this.style.display='none'">
+                <span class="match-player-name">${match.player2.name}</span>
+                <span class="match-club-name">${match.player2.clubName}</span>
+            </div>
+        </div>
+        <div class="match-score-input">
+            <div class="score-input-group">
+                <label>${match.player1.name}</label>
+                <input type="number" id="score1_${match.id}" value="${match.score1 || 0}" min="0" class="score-input">
+            </div>
+            <div class="score-input-group">
+                <label>${match.player2.name}</label>
+                <input type="number" id="score2_${match.id}" value="${match.score2 || 0}" min="0" class="score-input">
+            </div>
+        </div>
+        <button class="btn-submit-score" onclick="updateMatchScore('${match.id}')">
+            Update Scores
+        </button>
+    `;
+}
+
+function deleteTournament() {
+    if (!confirm('Delete tournament? Stats will be reverted.')) return;
+    
+    const tournament = getActiveTournament();
+    if (!tournament) return;
+    
+    const players = getPlayers();
+    
+    tournament.matches.forEach(match => revertMatchStats(match, players, tournament));
+    
+    savePlayers(players);
+    saveActiveTournament(null);
+    
+    showToast('Tournament deleted, stats reverted');
+    showAdminDashboard();
+}
+
+function deleteOldTournament(tournamentId) {
+    if (!confirm('Delete this old tournament? Stats will be reverted.')) return;
+    
+    const tournaments = getTournaments();
+    const tournament = tournaments.find(t => t.id === tournamentId);
+    if (!tournament) return;
+    
+    const players = getPlayers();
+    
+    tournament.matches.forEach(match => revertMatchStats(match, players, tournament));
+    
+    savePlayers(players);
+    saveTournaments(tournaments.filter(t => t.id !== tournamentId));
+    
+    showToast('Old tournament deleted, stats reverted');
+    loadAdminHistory();
+}
+
+function displayBracket(tournament) {
+    const container = document.getElementById('adminBracket');
+    if (!tournament.rounds?.length) {
+        container.innerHTML = '<p>Bracket not generated</p>';
+        return;
+    }
+    
+    container.innerHTML = tournament.rounds.map(round => `
+        <div class="bracket-round">
+            <h4>${round.name}</h4>
+            ${round.matches.map(match => `
+                <div class="bracket-match ${match.completed ? 'completed' : ''}">
+                    <div class="match-player ${match.winner?.id === match.player1?.id ? 'winner' : ''}">
+                        <img src="${match.player1?.clubLogo}" class="player-logo">
+                        ${match.player1 ? match.player1.name : 'TBD'} ${match.score1 !== null ? match.score1 : ''}
+                        ${match.penalties1 !== null ? `(${match.penalties1} pens)` : ''}
+                    </div>
+                    <div class="match-vs">VS</div>
+                    <div class="match-player ${match.winner?.id === match.player2?.id ? 'winner' : ''}">
+                        <img src="${match.player2?.clubLogo}" class="player-logo">
+                        ${match.player2 ? match.player2.name : 'TBD'} ${match.score2 !== null ? match.score2 : ''}
+                        ${match.penalties2 !== null ? `(${match.penalties2} pens)` : ''}
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `).join('');
+}
+
+function loadAdminLeaderboards() {
+    const container = document.getElementById('adminLeaderboards');
+    const players = getPlayers().filter(p => !p.isAdmin);
+    
+    const sorted = [...players].sort((a, b) => {
+        if ((b.championships || 0) !== (a.championships || 0)) return b.championships - a.championships;
+        return b.finalsReached - a.finalsReached;
+    }).slice(0, 10);
     
     container.innerHTML = `
         <table class="stats-table">
@@ -1210,27 +1185,23 @@ function loadAdminLeaderboards() {
                 <tr>
                     <th>Rank</th>
                     <th>Logo</th>
-                    <th>Club</th>
                     <th>Player</th>
-                    <th>Matches</th>
+                    <th>Club</th>
+                    <th>Titles</th>
                     <th>Finals</th>
-                    <th>Championships</th>
+                    <th>Goals</th>
                 </tr>
             </thead>
             <tbody>
-                ${topPlayers.length === 0 ? '<tr><td colspan="7" class="empty-state">No players yet</td></tr>' : topPlayers.map((player, index) => `
+                ${sorted.map((p, i) => `
                     <tr>
-                        <td class="rank-cell">
-                            ${index < 3 ? `<span class="medal medal-${index + 1}">${index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}</span>` : `<span class="rank-number">${index + 1}</span>`}
-                        </td>
-                        <td>
-                            <img src="${player.clubLogo}" alt="${player.clubName}" class="table-club-logo" onerror="this.style.display='none'">
-                        </td>
-                        <td class="club-name-cell">${player.clubName}</td>
-                        <td class="player-name-cell">${player.name}</td>
-                        <td>${player.goals || 0}</td>
-                        <td>${player.finalsReached || 0}</td>
-                        <td class="highlight-cell">${player.championships || 0}</td>
+                        <td>${i+1}</td>
+                        <td><img src="${p.clubLogo}" class="table-club-logo"></td>
+                        <td>${p.name}</td>
+                        <td>${p.clubName}</td>
+                        <td>${p.championships || 0}</td>
+                        <td>${p.finalsReached || 0}</td>
+                        <td>${p.goals || 0}</td>
                     </tr>
                 `).join('')}
             </tbody>
@@ -1238,187 +1209,139 @@ function loadAdminLeaderboards() {
     `;
 }
 
-// Load Admin History
 function loadAdminHistory() {
     const container = document.getElementById('adminHistory');
     const tournaments = getTournaments();
     
-    if (tournaments.length === 0) {
-        container.innerHTML = '<p class="empty-state">No completed tournaments yet</p>';
-        return;
-    }
-    
     container.innerHTML = tournaments.slice().reverse().map(t => `
         <div class="history-card glass-card-small" onclick="showTournamentDetails('${t.id}')">
             <div class="history-header">
-                <h4>🏆 Tournament #${t.id.slice(0, 6)}</h4>
-                <span class="history-date">${new Date(t.createdAt).toLocaleDateString()}</span>
+                <h4>Tournament #${t.id.slice(0,6)}</h4>
+                <span>${new Date(t.createdAt).toLocaleDateString()}</span>
             </div>
             <div class="history-info">
-                <p><strong>Winner:</strong> ${t.winner?.name || 'Unknown'}</p>
-                <p><strong>Players:</strong> ${t.players.length}</p>
-                <p><strong>Matches:</strong> ${t.matches.length}</p>
+                <p>Champion: ${t.winner?.name || 'N/A'}</p>
+                <p>Players: ${t.players.length}</p>
             </div>
+            <button onclick="deleteOldTournament('${t.id}'); event.stopPropagation();">Delete</button>
         </div>
-    `).join('');
+    `).join('') || '<p>No history</p>';
 }
 
-// Show Tournament Details (Admin View)
+// ───────────────────────────────────────────────
+// MODAL FUNCTIONS
+// ───────────────────────────────────────────────
+
 function showTournamentDetails(tournamentId) {
-    const tournaments = getTournaments();
-    const tournament = tournaments.find(t => t.id === tournamentId);
-    
+    const tournament = getTournaments().find(t => t.id === tournamentId) || getActiveTournament();
     if (!tournament) return;
     
     const modal = document.getElementById('tournamentModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
+    const title = document.getElementById('modalTitle');
+    const body = document.getElementById('modalBody');
     
-    modalTitle.textContent = `Tournament #${tournament.id.slice(0, 6)}`;
+    title.textContent = `Tournament #${tournament.id.slice(0,6)}`;
     
-    modalBody.innerHTML = `
+    body.innerHTML = `
         <div class="tournament-details">
-            <div class="detail-row">
-                <span class="detail-label">Winner:</span>
-                <span class="detail-value">${tournament.winner?.name || 'Unknown'}</span>
-            </div>
-            <div class="detail-row">
-                <span class="detail-label">Date:</span>
-                <span class="detail-value">${new Date(tournament.createdAt).toLocaleDateString()}</span>
-            </div>
-            <div class="detail-row">
-                <span class="detail-label">Players:</span>
-                <span class="detail-value">${tournament.players.length}</span>
-            </div>
+            <p><strong>Status:</strong> ${tournament.status.charAt(0).toUpperCase() + tournament.status.slice(1)}</p>
+            <p><strong>Date:</strong> ${new Date(tournament.createdAt).toLocaleDateString()}</p>
+            <p><strong>Players:</strong> ${tournament.players.length}</p>
+            ${tournament.winner ? `<p><strong>Champion:</strong> ${t.winner.name}</p>` : ''}
         </div>
         
-        <h4 style="margin: 24px 0 12px;">Bracket</h4>
-        ${tournament.rounds ? tournament.rounds.map(round => `
+        <h4>Bracket Tree</h4>
+        ${tournament.rounds?.map(round => `
             <div class="modal-round">
                 <h5>${round.name}</h5>
-                ${round.matches.map(match => {
-                    if (!match.player1 && !match.player2) return '';
-                    return `
-                        <div class="modal-match">
-                            <div>${match.player1?.name || 'TBD'} ${match.score1 !== null ? match.score1 : ''}</div>
-                            <div>${match.player2?.name || 'TBD'} ${match.score2 !== null ? match.score2 : ''}</div>
+                ${round.matches.map(match => `
+                    <div class="modal-match">
+                        <div class="${match.winner?.id === match.player1?.id ? 'winner' : ''}">
+                            <img src="${match.player1?.clubLogo}" class="player-logo">
+                            ${match.player1?.name || 'TBD'} ${match.score1 !== null ? match.score1 : ''}
+                            ${match.penalties1 !== null ? `(${match.penalties1} pens)` : ''}
                         </div>
-                    `;
-                }).join('')}
+                        <div class="match-vs">VS</div>
+                        <div class="${match.winner?.id === match.player2?.id ? 'winner' : ''}">
+                            <img src="${match.player2?.clubLogo}" class="player-logo">
+                            ${match.player2?.name || 'TBD'} ${match.score2 !== null ? match.score2 : ''}
+                            ${match.penalties2 !== null ? `(${match.penalties2} pens)` : ''}
+                        </div>
+                    </div>
+                `).join('')}
             </div>
-        `).join('') : '<p>No bracket data available</p>'}
+        `).join('') || '<p>No bracket</p>'}
     `;
     
     modal.classList.add('active');
 }
 
-// Show Tournament Details (Player View) - NEW FUNCTION
 function showPlayerTournamentDetails(tournamentId) {
     const user = getCurrentUser();
-    const tournaments = getTournaments();
-    const activeTournament = getActiveTournament();
-    
-    // Check both completed and active tournaments
-    let tournament = tournaments.find(t => t.id === tournamentId);
-    if (!tournament && activeTournament && activeTournament.id === tournamentId) {
-        tournament = activeTournament;
-    }
-    
+    const tournament = getTournaments().find(t => t.id === tournamentId) || getActiveTournament();
     if (!tournament) return;
     
     const modal = document.getElementById('tournamentModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
+    const title = document.getElementById('modalTitle');
+    const body = document.getElementById('modalBody');
     
-    const isPlayerInTournament = tournament.players.some(p => p.id === user.id);
+    title.textContent = `Tournament #${tournament.id.slice(0,6)}`;
     
-    modalTitle.textContent = `Tournament #${tournament.id.slice(0, 6)}`;
-    
-    let statusMessage = '';
-    if (tournament.status === 'active') {
-        statusMessage = '<div class="status-message status-active">🎮 Tournament in progress</div>';
-    } else if (tournament.status === 'completed') {
-        statusMessage = `<div class="status-message status-completed">🏆 Winner: <strong>${tournament.winner?.name}</strong></div>`;
-    }
-    
-    modalBody.innerHTML = `
-        ${statusMessage}
-        
+    body.innerHTML = `
         <div class="tournament-details">
-            <div class="detail-row">
-                <span class="detail-label">Status:</span>
-                <span class="detail-value">${tournament.status === 'completed' ? 'Completed' : tournament.status === 'active' ? 'In Progress' : 'Registration'}</span>
-            </div>
-            <div class="detail-row">
-                <span class="detail-label">Date:</span>
-                <span class="detail-value">${new Date(tournament.createdAt).toLocaleDateString()}</span>
-            </div>
-            <div class="detail-row">
-                <span class="detail-label">Players:</span>
-                <span class="detail-value">${tournament.players.length}</span>
-            </div>
-            ${tournament.status === 'completed' && tournament.winner ? `
-                <div class="detail-row">
-                    <span class="detail-label">Champion:</span>
-                    <span class="detail-value">🏆 ${tournament.winner.name}</span>
-                </div>
-            ` : ''}
+            <p><strong>Status:</strong> ${tournament.status.charAt(0).toUpperCase() + tournament.status.slice(1)}</p>
+            <p><strong>Date:</strong> ${new Date(tournament.createdAt).toLocaleDateString()}</p>
+            <p><strong>Players:</strong> ${tournament.players.length}</p>
+            ${tournament.winner ? `<p><strong>Champion:</strong> ${t.winner.name}</p>` : ''}
         </div>
         
-        <h4 style="margin: 24px 0 12px;">Participants</h4>
+        <h4>Participants</h4>
         <div class="participants-grid">
             ${tournament.players.map(p => `
                 <div class="participant-card ${p.id === user.id ? 'current-user' : ''} ${tournament.winner?.id === p.id ? 'tournament-winner' : ''}">
-                    <img src="${p.clubLogo}" alt="${p.clubName}" class="participant-logo">
+                    <img src="${p.clubLogo}" class="participant-logo">
                     <div class="participant-info">
                         <div class="participant-name">${p.name}${p.id === user.id ? ' (You)' : ''}</div>
                         <div class="participant-club">${p.clubName}</div>
                     </div>
-                    ${tournament.winner?.id === p.id ? '<div class="winner-badge">🏆 CHAMPION</div>' : ''}
+                    ${tournament.winner?.id === p.id ? '<div class="winner-badge">CHAMPION</div>' : ''}
                 </div>
             `).join('')}
         </div>
         
-        ${tournament.rounds && tournament.rounds.length > 0 ? `
-            <h4 style="margin: 24px 0 12px;">Tournament Bracket</h4>
-            ${tournament.rounds.map(round => `
-                <div class="modal-round">
-                    <h5>${round.name}</h5>
-                    ${round.matches.map(match => {
-                        if (!match.player1 && !match.player2) return '';
-                        
-                        const isUserInMatch = (match.player1?.id === user.id) || (match.player2?.id === user.id);
-                        
-                        return `
-                            <div class="modal-match ${isUserInMatch ? 'user-match' : ''} ${match.completed ? 'completed' : ''}">
-                                <div class="match-detail ${match.winner?.id === match.player1?.id ? 'winner' : ''}">
-                                    <span>${match.player1?.name || 'TBD'}${match.player1?.id === user.id ? ' (You)' : ''}</span>
-                                    ${match.score1 !== null ? `<strong>${match.score1}</strong>` : ''}
-                                </div>
-                                <div class="match-detail ${match.winner?.id === match.player2?.id ? 'winner' : ''}">
-                                    <span>${match.player2?.name || 'TBD'}${match.player2?.id === user.id ? ' (You)' : ''}</span>
-                                    ${match.score2 !== null ? `<strong>${match.score2}</strong>` : ''}
-                                </div>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-            `).join('')}
-        ` : '<p class="empty-state">Bracket not yet created</p>'}
+        <h4>Bracket Tree</h4>
+        ${tournament.rounds?.map(round => `
+            <div class="modal-round">
+                <h5>${round.name}</h5>
+                ${round.matches.map(match => `
+                    <div class="modal-match ${ (match.player1?.id === user.id || match.player2?.id === user.id) ? 'user-match' : '' }">
+                        <div class="${match.winner?.id === match.player1?.id ? 'winner' : ''}">
+                            <img src="${match.player1?.clubLogo}" class="player-logo">
+                            ${match.player1?.name || 'TBD'} ${match.score1 !== null ? match.score1 : ''}
+                            ${match.penalties1 !== null ? `(${match.penalties1} pens)` : ''}
+                            ${match.player1?.id === user.id ? ' (You)' : ''}
+                        </div>
+                        <div class="match-vs">VS</div>
+                        <div class="${match.winner?.id === match.player2?.id ? 'winner' : ''}">
+                            <img src="${match.player2?.clubLogo}" class="player-logo">
+                            ${match.player2?.name || 'TBD'} ${match.score2 !== null ? match.score2 : ''}
+                            ${match.penalties2 !== null ? `(${match.penalties2} pens)` : ''}
+                            ${match.player2?.id === user.id ? ' (You)' : ''}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `).join('') || '<p>No bracket yet</p>'}
     `;
     
     modal.classList.add('active');
 }
 
-// Close Modal
 function closeModal() {
     document.getElementById('tournamentModal').classList.remove('active');
 }
 
-// Close modal when clicking outside
-window.onclick = function(event) {
+window.onclick = (event) => {
     const modal = document.getElementById('tournamentModal');
-    if (event.target === modal) {
-        closeModal();
-    }
-}
+    if (event.target === modal) closeModal();
+};
