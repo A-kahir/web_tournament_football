@@ -1,5 +1,5 @@
 {
-  "outputDirectory": ".",
+  "outputDirectory": "public",
   "functions": {
     "api/data.js": {
       "memory": 1024,
