@@ -845,7 +845,9 @@ function revertMatchStats(match, players, tournament) {
         p1.losses = Math.max(0, (p1.losses || 0) - 1);
     }
     
-    const isFinal = match.roundNumber === tournament.rounds?.length;
+    // Check if this is the FINAL match - the final has only 1 match in its round (not a bye)
+        const roundMatches = tournament.matches.filter(m => m.roundNumber === match.roundNumber);
+        const isFinal = roundMatches.length === 1 && roundMatches[0].player2 !== null;
     if (isFinal) {
         p1.finalsReached = Math.max(0, (p1.finalsReached || 0) - 1);
         p2.finalsReached = Math.max(0, (p2.finalsReached || 0) - 1);
@@ -924,7 +926,9 @@ function updateMatchScore(matchId) {
             p1.losses = (p1.losses || 0) + 1;
         }
         
-        const isFinal = match.roundNumber === tournament.rounds?.length;
+        // Check if this is the FINAL match - the final has only 1 match in its round (not a bye)
+        const roundMatches = tournament.matches.filter(m => m.roundNumber === match.roundNumber);
+        const isFinal = roundMatches.length === 1 && roundMatches[0].player2 !== null;
         if (isFinal && !match.finalsTracked) {
             p1.finalsReached = (p1.finalsReached || 0) + 1;
             p2.finalsReached = (p2.finalsReached || 0) + 1;
@@ -1019,7 +1023,9 @@ function deleteTournament() {
                 p1.losses = Math.max(0, (p1.losses || 0) - 1);
             }
             
-            const isFinal = match.roundNumber === tournament.rounds?.length;
+            // Check if this is the FINAL match - the final has only 1 match in its round (not a bye)
+        const roundMatches = tournament.matches.filter(m => m.roundNumber === match.roundNumber);
+        const isFinal = roundMatches.length === 1 && roundMatches[0].player2 !== null;
             if (isFinal) {
                 p1.finalsReached = Math.max(0, (p1.finalsReached || 0) - 1);
                 p2.finalsReached = Math.max(0, (p2.finalsReached || 0) - 1);

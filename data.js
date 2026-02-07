@@ -404,5 +404,19 @@ function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
+// ADMIN FUNCTION: Clear all data and reset to fresh state
+// Call this function from browser console: resetAllData()
+function resetAllData() {
+    if (confirm('⚠️ WARNING: This will delete ALL players, tournaments, and data. This cannot be undone!\n\nAre you absolutely sure?')) {
+        localStorage.clear();
+        initializeStorage();
+        alert('✅ All data has been cleared. The page will now reload.');
+        location.reload();
+    }
+}
+
+// Make resetAllData available globally for console access
+window.resetAllData = resetAllData;
+
 // Initialize on load
 initializeStorage();
