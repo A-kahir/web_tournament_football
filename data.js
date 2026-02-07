@@ -279,6 +279,11 @@ const CLUBS = [
         id: 56, 
         name: "Avispa Fukuoka", 
         logo: "https://assets.football-logos.cc/logos/japan/256x256/avispa-fukuoka.29a8870a.png"
+    },
+    { 
+        id: 57, 
+        name: "Inter Miami", 
+        logo: "https://assets.football-logos.cc/logos/usa/700x700/inter-miami-cf.aeb3f125.png"
     }
 ];
 
