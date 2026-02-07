@@ -1,6 +1,7 @@
 {
   "name": "efootball-tournament-manager",
   "version": "2.0.0",
+  "type": "module",
   "description": "eFootball Tournament Management System - Multi-user sync enabled",
   "main": "index.html",
   "scripts": {
