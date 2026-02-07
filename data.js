@@ -283,7 +283,7 @@ const CLUBS = [
 ];
 
 // Admin Password - CHANGE THIS!
-const ADMIN_PASSWORD = "admin123";
+const ADMIN_PASSWORD = "Adminfootball22";
 
 // Initialize localStorage structure
 function initializeStorage() {

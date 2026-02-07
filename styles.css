@@ -425,8 +425,8 @@ body {
 }
 
 .club-logo {
-    width: 60px;
-    height: 60px;
+    width: 48px;
+    height: 48px;
     object-fit: contain;
     background: transparent;
 }
@@ -1204,9 +1204,16 @@ body {
 
 /* ===== MATCH MANAGEMENT ===== */
 .matches-title {
-    font-size: 18px;
-    font-weight: 600;
-    margin: 24px 0 16px;
+    font-size: 20px;
+    font-weight: 700;
+    margin: 32px 0 20px 0;
+    color: var(--primary-green);
+}
+
+#matchesList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 20px;
 }
 
 .round-title {
@@ -1218,80 +1225,187 @@ body {
 }
 
 .match-card {
-    padding: 20px;
-    margin-bottom: 16px;
+    padding: 24px;
     background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(0, 255, 136, 0.1);
-    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    transition: all 0.3s ease;
+}
+
+.match-card:hover {
+    border-color: var(--primary-green);
+    box-shadow: 0 4px 20px rgba(0, 255, 136, 0.15);
+}
+
+.match-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.match-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--primary-green);
+}
+
+.match-round {
+    font-size: 12px;
+    padding: 4px 10px;
+    background: rgba(0, 255, 136, 0.1);
+    border-radius: 6px;
+    color: var(--primary-green);
 }
 
 .match-players {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16px;
+    gap: 16px;
+    margin-bottom: 20px;
 }
 
-.match-player-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+.match-player {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .match-player-logo {
-    width: 48px;
-    height: 48px;
+    width: 56px;
+    height: 56px;
     object-fit: contain;
-    border-radius: 8px;
+    border-radius: 10px;
+}
+
+.match-player-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-align: center;
+}
+
+.match-club-name {
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-align: center;
 }
 
 .match-vs {
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--text-secondary);
-    padding: 0 16px;
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--primary-green);
+    padding: 8px 12px;
+    background: rgba(0, 255, 136, 0.1);
+    border-radius: 8px;
 }
 
 .match-score-input {
     display: flex;
-    align-items: center;
-    gap: 12px;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.score-input-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.score-input-group label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-align: center;
 }
 
 .score-input {
-    width: 80px;
+    width: 100%;
     padding: 12px;
     background: rgba(255, 255, 255, 0.05);
-    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.1);
     border-radius: 10px;
-    color: white;
-    font-size: 18px;
+    color: var(--text-primary);
+    font-size: 24px;
     font-weight: 700;
     text-align: center;
+    font-family: 'Orbitron', monospace;
+    transition: all 0.3s ease;
 }
 
 .score-input:focus {
     outline: none;
     border-color: var(--primary-green);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 4px rgba(0, 255, 136, 0.1);
 }
 
 .btn-submit-score {
-    padding: 12px;
-    background: var(--success-green);
+    width: 100%;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, var(--primary-green), var(--secondary-green));
+    color: #000;
     border: none;
     border-radius: 10px;
-    color: #000;
+    font-size: 15px;
+    font-weight: 700;
     cursor: pointer;
     transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .btn-submit-score:hover {
-    transform: scale(1.1);
-    box-shadow: 0 4px 16px rgba(0, 255, 136, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 255, 136, 0.4);
+}
+
+.match-result {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+    padding: 16px;
+    background: rgba(0, 255, 136, 0.05);
+    border-radius: 12px;
+}
+
+.score-display {
+    font-family: 'Orbitron', monospace;
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--primary-green);
+}
+
+.winner-name {
+    font-size: 14px;
+    color: #FFD700;
+    font-weight: 700;
+}
+
+.btn-edit-score {
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.3s ease;
+}
+
+.btn-edit-score:hover {
+    background: rgba(0, 255, 136, 0.1);
+    color: var(--primary-green);
+    border-color: var(--primary-green);
 }
 
 /* ===== BRACKET VIEW ===== */
@@ -1418,6 +1532,39 @@ body {
     font-size: 14px;
     color: var(--text-secondary);
     margin-bottom: 4px;
+}
+
+.tournament-goals {
+    color: var(--primary-green) !important;
+    font-weight: 600 !important;
+}
+
+.tournament-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.tournament-header h4 {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.tournament-date {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.tournament-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tournament-info p {
+    font-size: 14px;
+    color: var(--text-secondary);
 }
 
 .history-card {
@@ -2296,6 +2443,16 @@ body {
 .modal-match-player.winner {
     border-color: var(--primary-green);
     background: rgba(0, 255, 136, 0.1);
+}
+
+/* Gold winner highlight */
+.gold-winner {
+    color: #FFD700 !important;
+    font-weight: 700;
+}
+
+.winner {
+    color: #FFD700 !important;
 }
 
 .modal-player-info {
@@ -3802,5 +3959,696 @@ body {
     
     .tab-btn {
         padding: 14px 20px;
+    }
+}
+
+#tournamentsList {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+#tournamentsList .tournament-card img {
+    max-width: 60px;
+    max-height: 60px;
+    object-fit: contain;
+}
+
+/* ===== NEW FIGMA-STYLE BRACKET DESIGN ===== */
+
+/* Tournament Summary */
+.tournament-summary {
+    display: flex;
+    gap: 32px;
+    justify-content: center;
+    margin-bottom: 24px;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+}
+
+.summary-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.summary-label {
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.summary-value {
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 700;
+}
+
+/* Section Titles */
+.section-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 24px 0 16px;
+}
+
+.bracket-title {
+    margin-top: 32px;
+}
+
+/* New Participants Grid */
+.participants-grid-new {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+.participant-card-new {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.participant-card-new:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(0, 255, 136, 0.3);
+}
+
+.participant-card-new.current-user {
+    border-color: rgba(0, 255, 136, 0.5);
+    background: rgba(0, 255, 136, 0.05);
+}
+
+.participant-card-new.is-champion {
+    border-color: #FFD700;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.05));
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+}
+
+.participant-logo-new {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.participant-info-new {
+    flex: 1;
+    min-width: 0;
+}
+
+.participant-name-new {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.participant-club-new {
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.champion-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: #FFD700;
+    color: #000;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+}
+
+/* New Bracket Container */
+.bracket-container-new {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+.bracket-round-new {
+    width: 100%;
+}
+
+.round-label {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--primary-green);
+    margin-bottom: 16px;
+    text-align: left;
+}
+
+.bracket-matches-new {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* New Bracket Match Card */
+.bracket-match-new {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    gap: 16px;
+}
+
+.bracket-match-new:hover {
+    background: rgba(0, 0, 0, 0.4);
+    border-color: rgba(0, 255, 136, 0.3);
+}
+
+.bracket-match-new.completed {
+    border-color: var(--primary-green);
+    background: rgba(0, 255, 136, 0.05);
+}
+
+.bracket-match-new.user-match-new {
+    border-color: var(--primary-green);
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.15);
+}
+
+/* Match Player Names */
+.match-player-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+}
+
+.match-player-left {
+    text-align: center;
+}
+
+.match-player-right {
+    text-align: center;
+}
+
+/* Club Logos */
+.match-club-logo {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.match-club-placeholder {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+}
+
+/* Match Center - Score Display */
+.match-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 100px;
+    flex-shrink: 0;
+}
+
+.match-score {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.score-number {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-family: 'Orbitron', monospace;
+}
+
+.score-separator {
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--text-secondary);
+}
+
+.match-penalties {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--primary-green);
+    text-align: center;
+}
+
+.empty-bracket {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 40px;
+    font-size: 14px;
+}
+
+/* Mobile Responsive for New Bracket */
+@media (max-width: 768px) {
+    .participants-grid-new {
+        grid-template-columns: 1fr;
+    }
+    
+    .bracket-match-new {
+        flex-wrap: wrap;
+        padding: 16px;
+        gap: 12px;
+    }
+    
+    .match-player-left {
+        order: 1;
+        width: 100%;
+        text-align: left !important;
+    }
+    
+    .bracket-match-new > .match-club-logo:first-of-type {
+        order: 2;
+    }
+    
+    .match-center {
+        order: 3;
+        width: 100%;
+        padding: 12px 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .bracket-match-new > .match-club-logo:last-of-type {
+        order: 4;
+    }
+    
+    .match-player-right {
+        order: 5;
+        width: 100%;
+        text-align: left !important;
+    }
+    
+    .match-club-logo {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .tournament-summary {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .champion-badge {
+        font-size: 9px;
+        padding: 3px 6px;
+    }
+}
+
+/* ===== UNIFIED LEADERBOARD TABLE ===== */
+
+.unified-leaderboard {
+    padding: 24px;
+    margin-top: 16px;
+}
+
+.leaderboard-table-unified {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.leaderboard-table-unified thead {
+    background: rgba(0, 255, 136, 0.1);
+}
+
+.leaderboard-table-unified th {
+    padding: 16px 12px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--primary-green);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 2px solid var(--primary-green);
+}
+
+.leaderboard-table-unified th.rank-col {
+    width: 80px;
+    text-align: center;
+}
+
+.leaderboard-table-unified th.logo-col {
+    width: 80px;
+    text-align: center;
+}
+
+.leaderboard-table-unified th.stat-col {
+    text-align: center;
+    width: 120px;
+}
+
+.leaderboard-table-unified tbody tr {
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+}
+
+.leaderboard-table-unified tbody tr:hover {
+    background: rgba(0, 255, 136, 0.08);
+    transform: translateX(4px);
+}
+
+.leaderboard-table-unified tbody tr.top-rank {
+    background: rgba(0, 255, 136, 0.08);
+}
+
+.leaderboard-table-unified tbody tr.top-rank:hover {
+    background: rgba(0, 255, 136, 0.12);
+}
+
+.leaderboard-table-unified td {
+    padding: 16px 12px;
+    font-size: 14px;
+}
+
+.leaderboard-table-unified .rank-cell {
+    text-align: center;
+    font-size: 20px;
+}
+
+.leaderboard-table-unified .rank-cell:not(:empty) {
+    font-weight: 700;
+}
+
+.leaderboard-table-unified .logo-cell {
+    text-align: center;
+}
+
+.leaderboard-table-unified .logo-cell .table-club-logo {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+.leaderboard-table-unified .player-cell {
+    min-width: 150px;
+}
+
+.leaderboard-table-unified .player-cell .player-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.leaderboard-table-unified .player-cell .club-name {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.leaderboard-table-unified .club-name-cell {
+    color: var(--text-secondary);
+    min-width: 150px;
+}
+
+.leaderboard-table-unified .stat-cell {
+    text-align: center;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-family: 'Orbitron', monospace;
+}
+
+.leaderboard-table-unified .stat-cell.highlight {
+    color: var(--primary-green);
+    font-weight: 700;
+    font-size: 18px;
+}
+
+/* Mobile Responsive for Unified Leaderboard */
+@media (max-width: 768px) {
+    .leaderboard-table-unified th,
+    .leaderboard-table-unified td {
+        padding: 12px 8px;
+        font-size: 12px;
+    }
+    
+    .leaderboard-table-unified th {
+        font-size: 10px;
+    }
+    
+    .leaderboard-table-unified .logo-cell .table-club-logo {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .leaderboard-table-unified .player-cell .player-name {
+        font-size: 13px;
+    }
+    
+    .leaderboard-table-unified .player-cell .club-name {
+        font-size: 11px;
+    }
+    
+    .leaderboard-table-unified .stat-cell {
+        font-size: 14px;
+    }
+    
+    .leaderboard-table-unified .stat-cell.highlight {
+        font-size: 16px;
+    }
+    
+    .leaderboard-table-unified .rank-cell {
+        font-size: 16px;
+    }
+    
+    /* Hide club column on mobile as it's shown under player name */
+    .leaderboard-table-unified .club-name-cell,
+    .leaderboard-table-unified th.club-col {
+        display: none;
+    }
+}
+
+/* ===== NEW ADMIN TABLE STYLES ===== */
+
+.table-container {
+    overflow-x: auto;
+    margin-top: 20px;
+}
+
+.players-table-new {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.players-table-new thead {
+    background: rgba(0, 255, 136, 0.1);
+}
+
+.players-table-new th {
+    padding: 14px 16px;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary-green);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--primary-green);
+}
+
+.players-table-new tbody tr {
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+}
+
+.players-table-new tbody tr:hover {
+    background: rgba(0, 255, 136, 0.05);
+    transform: translateX(4px);
+}
+
+.players-table-new td {
+    padding: 16px;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.logo-cell {
+    width: 60px;
+    text-align: center;
+}
+
+.logo-cell .table-club-logo {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    border-radius: 6px;
+}
+
+.player-name-cell {
+    font-weight: 600;
+    min-width: 120px;
+}
+
+.club-name-cell {
+    color: var(--text-secondary);
+    min-width: 150px;
+}
+
+.stat-cell {
+    text-align: center;
+    font-family: 'Orbitron', monospace;
+    font-weight: 600;
+    width: 80px;
+}
+
+.highlight-stat {
+    color: var(--primary-green);
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.actions-cell {
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* Icon Action Buttons */
+.btn-icon-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    margin: 0 4px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: var(--text-secondary);
+}
+
+.btn-icon-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.btn-reset {
+    color: #4A9EFF;
+}
+
+.btn-reset:hover {
+    background: rgba(74, 158, 255, 0.15);
+    border-color: #4A9EFF;
+    box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
+}
+
+.btn-remove {
+    color: var(--danger-red);
+}
+
+.btn-remove:hover {
+    background: rgba(255, 59, 88, 0.15);
+    border-color: var(--danger-red);
+    box-shadow: 0 4px 12px rgba(255, 59, 88, 0.3);
+}
+
+/* History Card Updates */
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.history-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.history-date {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.btn-icon-small {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: var(--text-secondary);
+}
+
+.btn-delete-tournament {
+    color: var(--danger-red);
+}
+
+.btn-delete-tournament:hover {
+    background: rgba(255, 59, 88, 0.15);
+    border-color: var(--danger-red);
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(255, 59, 88, 0.3);
+}
+
+/* Mobile Responsive for Table */
+@media (max-width: 768px) {
+    .players-table-new {
+        font-size: 12px;
+    }
+    
+    .players-table-new th,
+    .players-table-new td {
+        padding: 10px 8px;
+    }
+    
+    .logo-cell .table-club-logo {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .btn-icon-action {
+        width: 32px;
+        height: 32px;
+        margin: 0 2px;
+    }
+    
+    .btn-icon-action svg {
+        width: 14px;
+        height: 14px;
+    }
+    
+    .club-name-cell {
+        display: none;
     }
 }
