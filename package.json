@@ -1,0 +1,17 @@
+{
+  "name": "efootball-tournament-manager",
+  "version": "1.0.0",
+  "description": "eFootball Tournament Management System with Vercel KV",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'No build needed for static site'"
+  },
+  "dependencies": {
+    "@vercel/kv": "^1.0.1"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.x"
+  }
+}
