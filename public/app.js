@@ -60,18 +60,14 @@ function showTab(tab) {
 }
 
 // Populate Club Grid
-async function populateClubGrid() {
+function populateClubGrid() {
     const clubGrid = document.getElementById('clubGrid');
     if (!clubGrid) return;
     
     clubGrid.innerHTML = '';
     
-    // Get all players once to check taken clubs
-    const players = await getPlayers();
-    const takenClubIds = players.map(p => p.clubId);
-    
     CLUBS.forEach(club => {
-        const isTaken = takenClubIds.includes(club.id);
+        const isTaken = isClubTaken(club.id);
         const isSelected = selectedClubId === club.id;
         
         const clubCard = document.createElement('div');
@@ -114,7 +110,7 @@ function clearClubSelection() {
 }
 
 // Player Registration
-async function playerRegister() {
+function playerRegister() {
     const name = document.getElementById('regName').value.trim();
     const password = document.getElementById('regPassword').value;
     const confirmPassword = document.getElementById('regConfirmPassword').value;
@@ -142,13 +138,13 @@ async function playerRegister() {
         return;
     }
     
-    const players = await getPlayers();
+    const players = getPlayers();
     if (players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
         errorMsg.textContent = 'This name is already taken';
         return;
     }
     
-    if (await isClubTaken(selectedClubId)) {
+    if (isClubTaken(selectedClubId)) {
         errorMsg.textContent = 'This club was just taken, please select another';
         populateClubGrid();
         return;
@@ -175,7 +171,7 @@ async function playerRegister() {
     };
     
     players.push(newPlayer);
-    await savePlayers(players);
+    savePlayers(players);
     
     const user = { ...newPlayer };
     delete user.password;
