@@ -285,6 +285,11 @@ const CLUBS = [
         name: "Inter Miami", 
         logo: "https://assets.football-logos.cc/logos/usa/700x700/inter-miami-cf.aeb3f125.png"
     }
+    { 
+        id: 58, 
+        name: "AS FAR", 
+        logo: "https://assets.football-logos.cc/logos/morocco/700x700/as-far.9e21c90d.png"
+    }
 ];
 
 // Admin Password - CHANGE THIS!
