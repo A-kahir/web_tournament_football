@@ -287,98 +287,192 @@ const CLUBS = [
     }
 ];
 
-// Admin Password - CHANGE THIS!
 const ADMIN_PASSWORD = "80778077";
 
-// Initialize localStorage structure
-function initializeStorage() {
-    if (!localStorage.getItem('players')) {
-        localStorage.setItem('players', JSON.stringify([]));
-    }
-    if (!localStorage.getItem('tournaments')) {
-        localStorage.setItem('tournaments', JSON.stringify([]));
-    }
-    if (!localStorage.getItem('activeTournament')) {
-        localStorage.setItem('activeTournament', JSON.stringify(null));
-    }
-    if (!localStorage.getItem('currentUser')) {
-        localStorage.setItem('currentUser', JSON.stringify(null));
-    }
-    if (!localStorage.getItem('adminExists')) {
-        localStorage.setItem('adminExists', JSON.stringify(false));
+// API Base URL - automatically works on Vercel
+const API_URL = '/api/data';
+
+// ============================================
+// AUTO-SYNC SYSTEM - Real-time updates for all users
+// ============================================
+
+let lastKnownUpdate = 0;
+let autoSyncInterval = null;
+
+// Start auto-sync when page loads
+function startAutoSync() {
+    // Check for updates every 3 seconds
+    autoSyncInterval = setInterval(async () => {
+        try {
+            const result = await apiCall('getAll');
+            if (result && result.lastUpdate && result.lastUpdate > lastKnownUpdate) {
+                console.log('🔄 New data detected, refreshing...');
+                lastKnownUpdate = result.lastUpdate;
+                
+                // Trigger a page refresh to show new data
+                if (typeof window.loadCurrentView === 'function') {
+                    window.loadCurrentView();
+                }
+            }
+        } catch (error) {
+            console.log('Sync check failed:', error);
+        }
+    }, 3000); // Check every 3 seconds
+}
+
+// Stop auto-sync
+function stopAutoSync() {
+    if (autoSyncInterval) {
+        clearInterval(autoSyncInterval);
+        autoSyncInterval = null;
     }
 }
 
-// Get data from localStorage
-function getData(key) {
-    const data = localStorage.getItem(key);
-    return data ? JSON.parse(data) : null;
+// ============================================
+// API FUNCTIONS - Server-side storage
+// ============================================
+
+async function apiCall(action, key = null, data = null) {
+    try {
+        const options = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ action, key, data })
+        };
+
+        const response = await fetch(API_URL, options);
+        const result = await response.json();
+        
+        if (!result.success) {
+            throw new Error(result.error || 'API call failed');
+        }
+        
+        // Update last known update time
+        if (result.lastUpdate) {
+            lastKnownUpdate = result.lastUpdate;
+        }
+        
+        return result.data;
+    } catch (error) {
+        console.error('API Error:', error);
+        // Fallback to localStorage for local development
+        if (action === 'get') {
+            const localData = localStorage.getItem(key);
+            return localData ? JSON.parse(localData) : null;
+        } else if (action === 'set') {
+            localStorage.setItem(key, JSON.stringify(data));
+            return data;
+        }
+        throw error;
+    }
 }
 
-// Save data to localStorage
-function saveData(key, data) {
-    localStorage.setItem(key, JSON.stringify(data));
+// Initialize storage
+async function initializeStorage() {
+    try {
+        // Try to get all data to check if initialized
+        const allData = await apiCall('getAll');
+        
+        // If no data exists, initialize
+        if (!allData || !allData.players) {
+            await apiCall('set', 'players', []);
+            await apiCall('set', 'tournaments', []);
+            await apiCall('set', 'activeTournament', null);
+            await apiCall('set', 'adminExists', false);
+        }
+        
+        // Start auto-sync after initialization
+        startAutoSync();
+        console.log('✅ Auto-sync enabled - page will refresh when data changes');
+        
+    } catch (error) {
+        console.error('Storage initialization error:', error);
+        // Fallback to localStorage
+        if (!localStorage.getItem('players')) {
+            localStorage.setItem('players', JSON.stringify([]));
+            localStorage.setItem('tournaments', JSON.stringify([]));
+            localStorage.setItem('activeTournament', JSON.stringify(null));
+            localStorage.setItem('currentUser', JSON.stringify(null));
+            localStorage.setItem('adminExists', JSON.stringify(false));
+        }
+    }
+}
+
+// Get data from API
+async function getData(key) {
+    return await apiCall('get', key);
+}
+
+// Save data to API
+async function saveData(key, data) {
+    return await apiCall('set', key, data);
 }
 
 // Get all players
-function getPlayers() {
-    return getData('players') || [];
+async function getPlayers() {
+    const players = await getData('players');
+    return players || [];
 }
 
 // Save players
-function savePlayers(players) {
-    saveData('players', players);
+async function savePlayers(players) {
+    return await saveData('players', players);
 }
 
 // Get tournaments
-function getTournaments() {
-    return getData('tournaments') || [];
+async function getTournaments() {
+    const tournaments = await getData('tournaments');
+    return tournaments || [];
 }
 
 // Save tournaments
-function saveTournaments(tournaments) {
-    saveData('tournaments', tournaments);
+async function saveTournaments(tournaments) {
+    return await saveData('tournaments', tournaments);
 }
 
 // Get active tournament
-function getActiveTournament() {
-    return getData('activeTournament');
+async function getActiveTournament() {
+    return await getData('activeTournament');
 }
 
 // Save active tournament
-function saveActiveTournament(tournament) {
-    saveData('activeTournament', tournament);
+async function saveActiveTournament(tournament) {
+    return await saveData('activeTournament', tournament);
 }
 
-// Get current user
+// Get current user (still use localStorage for session)
 function getCurrentUser() {
-    return getData('currentUser');
+    const data = localStorage.getItem('currentUser');
+    return data ? JSON.parse(data) : null;
 }
 
-// Save current user
+// Save current user (still use localStorage for session)
 function saveCurrentUser(user) {
-    saveData('currentUser', user);
+    localStorage.setItem('currentUser', JSON.stringify(user));
 }
 
 // Check if admin exists
-function adminExists() {
-    return getData('adminExists') || false;
+async function adminExists() {
+    const exists = await getData('adminExists');
+    return exists || false;
 }
 
 // Set admin exists
-function setAdminExists(exists) {
-    saveData('adminExists', exists);
+async function setAdminExists(exists) {
+    return await saveData('adminExists', exists);
 }
 
 // Check if club is taken
-function isClubTaken(clubId) {
-    const players = getPlayers();
+async function isClubTaken(clubId) {
+    const players = await getPlayers();
     return players.some(p => p.clubId === clubId);
 }
 
 // Get available clubs
-function getAvailableClubs() {
-    const players = getPlayers();
+async function getAvailableClubs() {
+    const players = await getPlayers();
     const takenClubIds = players.map(p => p.clubId);
     return CLUBS.filter(club => !takenClubIds.includes(club.id));
 }
@@ -410,18 +504,32 @@ function generateId() {
 }
 
 // ADMIN FUNCTION: Clear all data and reset to fresh state
-// Call this function from browser console: resetAllData()
-function resetAllData() {
+async function resetAllData() {
     if (confirm('⚠️ WARNING: This will delete ALL players, tournaments, and data. This cannot be undone!\n\nAre you absolutely sure?')) {
-        localStorage.clear();
-        initializeStorage();
-        alert('✅ All data has been cleared. The page will now reload.');
-        location.reload();
+        try {
+            await saveData('players', []);
+            await saveData('tournaments', []);
+            await saveData('activeTournament', null);
+            await saveData('adminExists', false);
+            localStorage.clear();
+            alert('✅ All data has been cleared. The page will now reload.');
+            location.reload();
+        } catch (error) {
+            console.error('Reset error:', error);
+            alert('Error resetting data. Please try again.');
+        }
     }
 }
 
-// Make resetAllData available globally for console access
+// Make functions available globally
 window.resetAllData = resetAllData;
+window.stopAutoSync = stopAutoSync;
+window.startAutoSync = startAutoSync;
 
 // Initialize on load
 initializeStorage();
+
+// Clean up on page unload
+window.addEventListener('beforeunload', () => {
+    stopAutoSync();
+});
