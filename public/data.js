@@ -287,7 +287,7 @@ const CLUBS = [
     }
 ];
 
-const ADMIN_PASSWORD = "Adminfootball22";
+const ADMIN_PASSWORD = "80778077";
 
 // API Base URL - automatically works on Vercel
 const API_URL = '/api/data';
