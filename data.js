@@ -289,11 +289,47 @@ const CLUBS = [
 
 const ADMIN_PASSWORD = "Adminfootball22";
 
-// API Base URL - will work automatically on Vercel
+// API Base URL - automatically works on Vercel
 const API_URL = '/api/data';
 
 // ============================================
-// API FUNCTIONS - Replace localStorage
+// AUTO-SYNC SYSTEM - Real-time updates for all users
+// ============================================
+
+let lastKnownUpdate = 0;
+let autoSyncInterval = null;
+
+// Start auto-sync when page loads
+function startAutoSync() {
+    // Check for updates every 3 seconds
+    autoSyncInterval = setInterval(async () => {
+        try {
+            const result = await apiCall('getAll');
+            if (result && result.lastUpdate && result.lastUpdate > lastKnownUpdate) {
+                console.log('🔄 New data detected, refreshing...');
+                lastKnownUpdate = result.lastUpdate;
+                
+                // Trigger a page refresh to show new data
+                if (typeof window.loadCurrentView === 'function') {
+                    window.loadCurrentView();
+                }
+            }
+        } catch (error) {
+            console.log('Sync check failed:', error);
+        }
+    }, 3000); // Check every 3 seconds
+}
+
+// Stop auto-sync
+function stopAutoSync() {
+    if (autoSyncInterval) {
+        clearInterval(autoSyncInterval);
+        autoSyncInterval = null;
+    }
+}
+
+// ============================================
+// API FUNCTIONS - Server-side storage
 // ============================================
 
 async function apiCall(action, key = null, data = null) {
@@ -313,6 +349,11 @@ async function apiCall(action, key = null, data = null) {
             throw new Error(result.error || 'API call failed');
         }
         
+        // Update last known update time
+        if (result.lastUpdate) {
+            lastKnownUpdate = result.lastUpdate;
+        }
+        
         return result.data;
     } catch (error) {
         console.error('API Error:', error);
@@ -320,6 +361,9 @@ async function apiCall(action, key = null, data = null) {
         if (action === 'get') {
             const localData = localStorage.getItem(key);
             return localData ? JSON.parse(localData) : null;
+        } else if (action === 'set') {
+            localStorage.setItem(key, JSON.stringify(data));
+            return data;
         }
         throw error;
     }
@@ -338,6 +382,11 @@ async function initializeStorage() {
             await apiCall('set', 'activeTournament', null);
             await apiCall('set', 'adminExists', false);
         }
+        
+        // Start auto-sync after initialization
+        startAutoSync();
+        console.log('✅ Auto-sync enabled - page will refresh when data changes');
+        
     } catch (error) {
         console.error('Storage initialization error:', error);
         // Fallback to localStorage
@@ -472,8 +521,15 @@ async function resetAllData() {
     }
 }
 
-// Make resetAllData available globally for console access
+// Make functions available globally
 window.resetAllData = resetAllData;
+window.stopAutoSync = stopAutoSync;
+window.startAutoSync = startAutoSync;
 
 // Initialize on load
 initializeStorage();
+
+// Clean up on page unload
+window.addEventListener('beforeunload', () => {
+    stopAutoSync();
+});
