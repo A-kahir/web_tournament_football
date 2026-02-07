@@ -284,7 +284,7 @@ const CLUBS = [
         id: 57, 
         name: "Inter Miami", 
         logo: "https://assets.football-logos.cc/logos/usa/700x700/inter-miami-cf.aeb3f125.png"
-    }
+    }.
     { 
         id: 58, 
         name: "AS FAR", 
