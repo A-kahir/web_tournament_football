@@ -8,6 +8,6 @@
     "build": "echo 'Static site ready for deployment'"
   },
   "engines": {
-    "node": "18.x"
+    "node": "24.x"
   }
 }
