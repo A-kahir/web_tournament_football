@@ -90,7 +90,7 @@ To make the experience more engaging, the platform also includes player statisti
 
 The application is deployed on Vercel.
 
-[Visit the Live Website](<deployment-url>)
+[Visit the Live Website]([deployment-url](https://web-tournament-football.vercel.app/))
 
 ## 📸 Screenshots
 
